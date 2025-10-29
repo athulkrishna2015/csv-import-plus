@@ -31,6 +31,10 @@ A confirmation message will appear summarizing how many notes were added.
 
 ## Special Features
 
+### Auto detect subdeck nam
+
+auto detect subdeck name from csv file name 
+
 ### `#notetype` Directive
 
 To ensure your CSV file is always imported with a specific note type, add a line at the top of your file or pasted text like this:
