@@ -14,6 +14,7 @@ It is designed to be a faster alternative to the built-in Anki importer for comm
 - **`#notetype` Directive**: Force a specific note type by adding a special comment to your CSV data.
 - **Tag Importing**: Automatically add tags to new notes by placing them in an extra column at the end of your data.
 - **Fallback to Anki Importer**: For complex cases, you can easily send the data to Anki's standard import dialog to handle advanced field mapping.
+<img width="1444" height="919" alt="Screenshot_20251029_190259" src="https://github.com/user-attachments/assets/0683a882-b846-492a-a48c-c489a69c3a73" />
 
 ## How to Use
 
