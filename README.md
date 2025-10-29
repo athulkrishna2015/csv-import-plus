@@ -31,7 +31,7 @@ A confirmation message will appear summarizing how many notes were added.
 
 ## Special Features
 
-### Auto detect subdeck nam
+### Auto detect subdeck name
 
 auto detect subdeck name from csv file name 
 
