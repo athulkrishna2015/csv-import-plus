@@ -9,12 +9,16 @@ It is designed to be a faster alternative to the built-in Anki importer for comm
 - **Auto-Detection**: Automatically detects the CSV delimiter (comma, tab, semicolon, etc.) and the most likely note type for your data.
 - **Paste or Pick File**: Import data by either picking a `.csv` file or pasting CSV text directly into the dialog.
 - **Quick Import**: A one-click import that uses the auto-detected settings to add notes instantly.
+- **Lock Target Deck**: A checkbox to lock the selected target deck. The addon will remember your locked deck even after restarting Anki.
+- **Smarter Imports with Locked Deck**: When a deck is locked, you can still create a new subdeck and import into it. After the import, the target deck selection will automatically revert to your locked deck.
 - **Note Type Suggestion**: Analyzes the number of columns in your CSV to find and select the best matching note type.
 - **On-the-fly Subdeck Creation**: Quickly create a new subdeck to import your cards into, with the name conveniently pre-filled from your filename.
 - **`#notetype` Directive**: Force a specific note type by adding a special comment to your CSV data.
 - **Tag Importing**: Automatically add tags to new notes by placing them in an extra column at the end of your data.
 - **Fallback to Anki Importer**: For complex cases, you can easily send the data to Anki's standard import dialog to handle advanced field mapping.
-<img width="1444" height="919" alt="Screenshot_20251029_190259" src="https://github.com/user-attachments/assets/0683a882-b846-492a-a48c-c489a69c3a73" />
+
+<img width="1220" height="918" alt="Screenshot_20251101_192659" src="https://github.com/user-attachments/assets/2f18930c-83b2-4b43-aa32-8a1d8cb7cd28" />
+
 
 ## How to Use
 
@@ -30,10 +34,6 @@ It is designed to be a faster alternative to the built-in Anki importer for comm
 A confirmation message will appear summarizing how many notes were added.
 
 ## Special Features
-
-### Auto detect subdeck name
-
-auto detect subdeck name from csv file name 
 
 ### `#notetype` Directive
 
@@ -58,6 +58,16 @@ What is 2+2?,4,math basics
 ```
 
 The first note will be tagged `geography` and `europe`, and the second will be tagged `math` and `basics`.
+
+## Changelog
+
+### [2025-11-01]
+
+- **Added**: "Lock Target Deck" option to persist the selected deck across imports and sessions.
+- **Added**: The success message now shows the name of the deck cards were imported into.
+- **Improved**: The addon window is now non-modal, allowing interaction with the main Anki window.
+- **Fixed**: The addon window no longer always stays on top of the main Anki window.
+- **Fixed**: Resolved a crash on startup with newer Anki versions related to window handling.
 
 ## License
 
