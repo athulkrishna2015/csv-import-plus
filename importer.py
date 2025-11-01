@@ -136,7 +136,8 @@ def do_import(
 
         mw.reset()
 
-        msg = f"Import complete!\n\nAdded: {added} note(s)"
+        deck_name = deck_combo.currentText()
+        msg = f"Import complete!\n\nAdded: {added} note(s) to deck '{deck_name}'"
         if skipped_empty:
             msg += f"\nSkipped empty rows: {skipped_empty}"
         if delimiter_combo.currentText() == "Auto-detect":

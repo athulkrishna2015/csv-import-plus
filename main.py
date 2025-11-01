@@ -7,8 +7,11 @@ from .dialog import CSVImportPlusDialog
 
 
 def show_csv_import_plus_dialog():
-    dlg = CSVImportPlusDialog(mw)
-    dlg.exec()
+    if hasattr(mw, "csv_import_plus_dialog") and mw.csv_import_plus_dialog.isVisible():
+        mw.csv_import_plus_dialog.activateWindow()
+        return
+    mw.csv_import_plus_dialog = CSVImportPlusDialog(None)
+    mw.csv_import_plus_dialog.show()
 
 
 def setup_menu():

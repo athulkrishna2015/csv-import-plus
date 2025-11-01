@@ -22,10 +22,42 @@ class CSVImportPlusDialog(QDialog):
         self.model_infos = []
         # State
         self.file_path = ""
+        self.locked_deck_name = None
         self.setup_ui()
+        self.load_config()
+
+    def closeEvent(self, event):
+        self.deleteLater()
+        event.accept()
 
     # -------------------- UI --------------------
     setup_ui = ui.setup_ui
+
+    # -------------------- Config --------------------
+    def load_config(self):
+        config = mw.addonManager.getConfig(__name__)
+        if not config:
+            return
+        
+        self.deck_lock_check.setChecked(config.get("deck_lock", False))
+        self.locked_deck_name = config.get("locked_deck_name")
+
+        if self.deck_lock_check.isChecked() and self.locked_deck_name:
+            self.deck_combo.setCurrentText(self.locked_deck_name)
+
+    def save_config(self):
+        config = {
+            "deck_lock": self.deck_lock_check.isChecked(),
+            "locked_deck_name": self.locked_deck_name,
+        }
+        mw.addonManager.writeConfig(__name__, config)
+
+    def on_deck_lock_toggled(self, checked):
+        if checked:
+            self.locked_deck_name = self.deck_combo.currentText()
+        else:
+            self.locked_deck_name = None
+        self.save_config()
 
     # -------------------- Deck/model helpers --------------------
     def refresh_decks(self, select_name: str | None = None):
@@ -170,3 +202,6 @@ class CSVImportPlusDialog(QDialog):
             self.header_check,
             self.delimiter_combo,
         )
+
+        if self.deck_lock_check.isChecked() and self.locked_deck_name:
+            self.deck_combo.setCurrentText(self.locked_deck_name)

@@ -9,10 +9,14 @@ It is designed to be a faster alternative to the built-in Anki importer for comm
 - **Auto-Detection**: Automatically detects the CSV delimiter (comma, tab, semicolon, etc.) and the most likely note type for your data.
 - **Paste or Pick File**: Import data by either picking a `.csv` file or pasting CSV text directly into the dialog.
 - **Quick Import**: A one-click import that uses the auto-detected settings to add notes instantly.
+- **Lock Target Deck**: A checkbox to lock the selected target deck. The addon will remember your locked deck even after restarting Anki.
+- **Smarter Imports with Locked Deck**: When a deck is locked, you can still create a new subdeck and import into it. After the import, the target deck selection will automatically revert to your locked deck.
 - **Note Type Suggestion**: Analyzes the number of columns in your CSV to find and select the best matching note type.
 - **On-the-fly Subdeck Creation**: Quickly create a new subdeck to import your cards into, with the name conveniently pre-filled from your filename.
 - **`#notetype` Directive**: Force a specific note type by adding a special comment to your CSV data.
 - **Tag Importing**: Automatically add tags to new notes by placing them in an extra column at the end of your data.
+- **Clearer Import Confirmation**: The success message now explicitly states the name of the deck where the notes were imported.
+- **Non-Modal Window**: The addon window no longer blocks the main Anki window, allowing you to browse your collection while the import dialog is open.
 - **Fallback to Anki Importer**: For complex cases, you can easily send the data to Anki's standard import dialog to handle advanced field mapping.
 
 ## How to Use
@@ -53,6 +57,16 @@ What is 2+2?,4,math basics
 ```
 
 The first note will be tagged `geography` and `europe`, and the second will be tagged `math` and `basics`.
+
+## Changelog
+
+### [2025-11-01]
+
+- **Added**: "Lock Target Deck" option to persist the selected deck across imports and sessions.
+- **Added**: The success message now shows the name of the deck cards were imported into.
+- **Improved**: The addon window is now non-modal, allowing interaction with the main Anki window.
+- **Fixed**: The addon window no longer always stays on top of the main Anki window.
+- **Fixed**: Resolved a crash on startup with newer Anki versions related to window handling.
 
 ## License
 

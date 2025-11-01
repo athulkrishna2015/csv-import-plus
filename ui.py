@@ -73,9 +73,16 @@ def setup_ui(self):
     settings_form = QFormLayout(settings_group)
 
     # Deck combo
+    deck_container = QWidget(self)
+    deck_row = QHBoxLayout(deck_container)
+    deck_row.setContentsMargins(0, 0, 0, 0)
     self.deck_combo = QComboBox(self)
+    self.deck_lock_check = QCheckBox("Lock Target Deck", self)
+    self.deck_lock_check.toggled.connect(self.on_deck_lock_toggled)
+    deck_row.addWidget(self.deck_combo, 1)
+    deck_row.addWidget(self.deck_lock_check, 0)
     self.refresh_decks()
-    settings_form.addRow("Target Deck:", self.deck_combo)
+    settings_form.addRow("Target Deck:", deck_container)
 
     # Subdeck creation
     subdeck_container = QWidget(self)

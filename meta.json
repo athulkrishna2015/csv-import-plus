@@ -1,1 +1,1 @@
-{"name": "csv import", "mod": 1761741359, "min_point_version": 1, "max_point_version": 1, "branch_index": 0, "disabled": false, "conflicts": [], "update_enabled": true}
+{"name": "csv import plus", "mod": 1761741359, "min_point_version": 1, "max_point_version": 1, "branch_index": 0, "disabled": false, "config": {"deck_lock": true, "locked_deck_name": "ztest"}}
