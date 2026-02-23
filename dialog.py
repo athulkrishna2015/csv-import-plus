@@ -5,7 +5,7 @@ import csv
 import io
 
 from aqt import mw
-from aqt.qt import QDialog, QFileDialog
+from aqt.qt import QDialog, QFileDialog, QTimer
 
 from . import anki_helpers
 from . import detector
@@ -23,6 +23,9 @@ class CSVImportPlusDialog(QDialog):
         # State
         self.file_path = ""
         self.locked_deck_name = None
+        self._analysis_timer = QTimer(self)
+        self._analysis_timer.setSingleShot(True)
+        self._analysis_timer.timeout.connect(self.on_content_changed)
         self.setup_ui()
         self.load_config()
 
@@ -120,10 +123,18 @@ class CSVImportPlusDialog(QDialog):
             return self.read_file_text().strip()
         return ""
 
+    def schedule_content_changed(self):
+        # Debounce text edits to avoid expensive re-parsing on every keystroke.
+        self._analysis_timer.start(180)
+
     # -------------------- Status updates --------------------
     def on_content_changed(self):
         raw = self.get_active_raw()
         if not raw:
+            try:
+                self.delimiter_combo.setItemText(0, "Auto-detect")
+            except Exception:
+                pass
             self.status_label.setText("")
             return
 
@@ -145,13 +156,26 @@ class CSVImportPlusDialog(QDialog):
                 except Exception:
                     pass
 
-        # Determine delimiter & rows
-        if self.delimiter_combo.currentText() == "Auto-detect":
+        # Live delimiter detection preview (updates even in manual mode).
+        detected_delimiter = None
+        detected_rows = 0
+        try:
+            detected_delimiter, detected_rows = detector.detect_csv_format(content)
+            detected_name = detector.get_delimiter_name(detected_delimiter)
+            self.delimiter_combo.setItemText(0, f"Auto-detect ({detected_name})")
+        except Exception as e:
             try:
-                delimiter, rows = detector.detect_csv_format(content)
-            except Exception as e:
+                self.delimiter_combo.setItemText(0, "Auto-detect")
+            except Exception:
+                pass
+            if self.delimiter_combo.currentIndex() == 0:
                 self.status_label.setText(f"⚠ Detection failed: {str(e)}")
                 return
+
+        # Determine delimiter & rows used for preview/status and import settings.
+        if self.delimiter_combo.currentIndex() == 0:
+            delimiter = detected_delimiter if detected_delimiter is not None else ","
+            rows = detected_rows
         else:
             delimiter = importer.get_delimiter(self.delimiter_combo, content)
             try:
@@ -178,7 +202,7 @@ class CSVImportPlusDialog(QDialog):
         if forced_model_info:
             model_name, field_count = forced_model_info
             parts.append(
-                f"Note type: {model_name} ({field_count} field(s), via directive))"
+                f"Note type: {model_name} ({field_count} field(s), via directive)"
             )
         elif detected_model:
             model_name, field_count = detected_model
@@ -193,7 +217,7 @@ class CSVImportPlusDialog(QDialog):
 
     def do_import(self):
         raw = self.get_active_raw()
-        importer.do_import(
+        result = importer.do_import(
             raw,
             self.deck_combo,
             self.deck_infos,
@@ -202,6 +226,20 @@ class CSVImportPlusDialog(QDialog):
             self.header_check,
             self.delimiter_combo,
         )
+        if result:
+            # Clear only pasted input after successful import.
+            self.csv_text.blockSignals(True)
+            self.csv_text.clear()
+            self.csv_text.blockSignals(False)
+
+            parts = [
+                f"✓ Import complete: Added {result['added']} note(s) to deck '{result['deck_name']}'"
+            ]
+            if result["skipped_empty"]:
+                parts.append(f"Skipped empty rows: {result['skipped_empty']}")
+            if result["used_auto_delimiter"]:
+                parts.append(f"Used delimiter: {result['delimiter_name']}")
+            self.status_label.setText(" • ".join(parts))
 
         if self.deck_lock_check.isChecked() and self.locked_deck_name:
             self.deck_combo.setCurrentText(self.locked_deck_name)

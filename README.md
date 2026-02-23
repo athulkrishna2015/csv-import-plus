@@ -7,6 +7,7 @@ It is designed to be a faster alternative to the built-in Anki importer for comm
 ## Features
 
 - **Auto-Detection**: Automatically detects the CSV delimiter (comma, tab, semicolon, etc.) and the most likely note type for your data.
+- **Live Delimiter Preview**: The delimiter dropdown updates live to show the currently detected delimiter while you type or paste.
 - **Paste or Pick File**: Import data by either picking a `.csv` file or pasting CSV text directly into the dialog.
 - **Quick Import**: A one-click import that uses the auto-detected settings to add notes instantly.
 - **Lock Target Deck**: A checkbox to lock the selected target deck. The addon will remember your locked deck even after restarting Anki.
@@ -26,12 +27,12 @@ It is designed to be a faster alternative to the built-in Anki importer for comm
 2.  In the dialog, you can either:
     -   Click **"Pick File..."** to select a `.csv` file.
     -   Or, paste your CSV-formatted text directly into the "Paste CSV Text" area.
-3.  The status bar will update to show you the detected delimiter, the number of rows, and the suggested note type.
+3.  The status bar updates live to show the detected delimiter, the number of rows, and the suggested note type. The delimiter dropdown also shows a live auto-detect preview.
 4.  Choose a target **Deck**. You can also type a name in the **"Create Subdeck"** field and click the button to create a new deck inside the one selected above.
 5.  If the suggested **Note Type** is not correct, you can manually select another one from the dropdown.
 6.  Click **"Quick Import"** to import the notes immediately using the current settings.
 
-A confirmation message will appear summarizing how many notes were added.
+Import status is shown inline in the main addon window.
 
 ## Special Features
 
@@ -60,6 +61,16 @@ What is 2+2?,4,math basics
 The first note will be tagged `geography` and `europe`, and the second will be tagged `math` and `basics`.
 
 ## Changelog
+
+### [2026-02-23]
+
+- **Changed**: Removed the Quick Import completion pop-up dialog.
+- **Changed**: Quick Import completion details are now shown in the main window status line.
+- **Changed**: Pasted CSV text is cleared automatically after a successful Quick Import.
+- **Changed**: Delimiter auto-detection preview in the dropdown now updates live as content changes.
+- **Fixed**: Resolved an intermittent issue where the addon window could close unexpectedly.
+- **Fixed**: Header-only CSV input now correctly stops import when "First row is header" is enabled.
+- **Improved**: Live delimiter/note-type preview is now debounced to reduce UI lag on large pasted CSV content.
 
 ### [2025-11-01]
 

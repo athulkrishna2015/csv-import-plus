@@ -60,7 +60,7 @@ def setup_ui(self):
         "Text,Extra,Tags\n"
         "{{c1::Humans}} landed on the moon in {{c1::1969}}.,,space"
     )
-    self.csv_text.textChanged.connect(self.on_content_changed)
+    self.csv_text.textChanged.connect(self.schedule_content_changed)
     root.addWidget(self.csv_text, 1)
 
     # Status

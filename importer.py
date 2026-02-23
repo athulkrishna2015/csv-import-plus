@@ -6,7 +6,7 @@ import os
 import tempfile
 
 from aqt import mw
-from aqt.utils import showInfo, showWarning
+from aqt.utils import showWarning
 from aqt.importing import importFile
 
 from . import detector
@@ -107,8 +107,11 @@ def do_import(
             showWarning("No data rows found.")
             return
 
-        if header_check.isChecked() and len(rows) > 1:
+        if header_check.isChecked():
             rows = rows[1:]
+            if not rows:
+                showWarning("No data rows found after skipping header row.")
+                return
 
         field_names = [f["name"] for f in notetype["flds"]]
 
@@ -137,21 +140,21 @@ def do_import(
         mw.reset()
 
         deck_name = deck_combo.currentText()
-        msg = f"Import complete!\n\nAdded: {added} note(s) to deck '{deck_name}'"
-        if skipped_empty:
-            msg += f"\nSkipped empty rows: {skipped_empty}"
-        if delimiter_combo.currentText() == "Auto-detect":
-            msg += f"\n\nUsed delimiter: {detector.get_delimiter_name(delimiter)}"
-
-        showInfo(msg)
-        # Dialog intentionally stays open for further imports
+        return {
+            "added": added,
+            "skipped_empty": skipped_empty,
+            "deck_name": deck_name,
+            "used_auto_delimiter": delimiter_combo.currentIndex() == 0,
+            "delimiter_name": detector.get_delimiter_name(delimiter),
+        }
     except Exception as e:
         showWarning(f"Import failed: {str(e)}")
+        return None
 
 
 def get_delimiter(delimiter_combo, content):
     selection = delimiter_combo.currentText()
-    if selection == "Auto-detect":
+    if delimiter_combo.currentIndex() == 0 or selection.startswith("Auto-detect"):
         if content:
             try:
                 delimiter, _ = detector.detect_csv_format(content)

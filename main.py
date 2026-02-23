@@ -7,11 +7,23 @@ from .dialog import CSVImportPlusDialog
 
 
 def show_csv_import_plus_dialog():
-    if hasattr(mw, "csv_import_plus_dialog") and mw.csv_import_plus_dialog.isVisible():
-        mw.csv_import_plus_dialog.activateWindow()
+    dialog = getattr(mw, "csv_import_plus_dialog", None)
+    if dialog and dialog.isVisible():
+        dialog.activateWindow()
+        dialog.raise_()
         return
-    mw.csv_import_plus_dialog = CSVImportPlusDialog(None)
-    mw.csv_import_plus_dialog.show()
+
+    d = CSVImportPlusDialog(mw)
+
+    def _clear_dialog_ref(*_):
+        if getattr(mw, "csv_import_plus_dialog", None) is d:
+            setattr(mw, "csv_import_plus_dialog", None)
+
+    d.destroyed.connect(_clear_dialog_ref)
+    d.show()
+    d.raise_()
+    d.activateWindow()
+    mw.csv_import_plus_dialog = d
 
 
 def setup_menu():
@@ -22,4 +34,3 @@ def setup_menu():
 
 def init():
     gui_hooks.main_window_did_init.append(setup_menu)
-
