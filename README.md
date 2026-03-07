@@ -9,6 +9,7 @@ It is designed to be a faster alternative to the built-in Anki importer for comm
 - **Auto-Detection**: Automatically detects the CSV delimiter (comma, tab, semicolon, etc.) and the most likely note type for your data.
 - **Live Delimiter Preview**: The delimiter dropdown updates live to show the currently detected delimiter while you type or paste.
 - **Paste or Pick File**: Import data by either picking a `.csv` file or pasting CSV text directly into the dialog.
+- **Paste Clipboard Button**: Use the dedicated `Paste Clipboard` button to pull clipboard text into the editor without manual paste.
 - **Quick Import**: A one-click import that uses the auto-detected settings to add notes instantly.
 - **Lock Target Deck**: A checkbox to lock the selected target deck. The addon will remember your locked deck even after restarting Anki.
 - **Smarter Imports with Locked Deck**: When a deck is locked, you can still create a new subdeck and import into it. After the import, the target deck selection will automatically revert to your locked deck.
@@ -26,11 +27,13 @@ It is designed to be a faster alternative to the built-in Anki importer for comm
 1.  Go to **Tools → CSV Import +...** in Anki's main menu.
 2.  In the dialog, you can either:
     -   Click **"Pick File..."** to select a `.csv` file.
-    -   Or, paste your CSV-formatted text directly into the "Paste CSV Text" area.
+    -   Click **"Paste Clipboard"** to insert the current clipboard text into the editor.
+    -   Or, paste your CSV-formatted text directly into the editor.
 3.  The status bar updates live to show the detected delimiter, the number of rows, and the suggested note type. The delimiter dropdown also shows a live auto-detect preview.
 4.  Choose a target **Deck**. You can also type a name in the **"Create Subdeck"** field and click the button to create a new deck inside the one selected above.
 5.  If the suggested **Note Type** is not correct, you can manually select another one from the dropdown.
-6.  Click **"Quick Import"** to import the notes immediately using the current settings.
+6.  Open **"Advanced"** for delimiter, header, clipboard, subdeck, deck lock, and built-in Anki importer options when needed.
+7.  Click **"Quick Import"** to import the notes immediately using the current settings.
 
 Import status is shown inline in the main addon window.
 
@@ -61,6 +64,12 @@ What is 2+2?,4,math basics
 The first note will be tagged `geography` and `europe`, and the second will be tagged `math` and `basics`.
 
 ## Changelog
+
+### [2026-03-07]
+
+- **Changed**: Moved advanced controls into a dedicated **Advanced** menu to simplify the main import window.
+- **Added**: New option to allow **Quick Import Clipboard** for any non-empty clipboard text without requiring CSV-like validation.
+- **Added**: Dedicated **Paste Clipboard** button documentation in the main workflow and feature list.
 
 ### [2026-02-23]
 

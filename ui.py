@@ -8,10 +8,13 @@ from aqt.qt import (
     QHBoxLayout,
     QLabel,
     QLineEdit,
+    QMenu,
     QPushButton,
+    QPlainTextEdit,
+    QToolButton,
     QVBoxLayout,
     QWidget,
-    QPlainTextEdit,
+    QWidgetAction,
 )
 
 
@@ -24,7 +27,7 @@ def setup_ui(self):
     instr = QLabel(
         "Paste CSV or choose a CSV file, adjust options, pick deck and note type, then import.\n"
         "Supported delimiters: comma, tab, semicolon, pipe. Directives: #notetype:Basic or #notetype:Cloze\n"
-        "Quick Import adds notes directly; Import with Anki dialog opens the standard importer."
+        "Quick Import adds notes directly; use Advanced for delimiter, header, clipboard, and fallback import options."
     )
     instr.setWordWrap(True)
     root.addWidget(instr)
@@ -48,7 +51,21 @@ def setup_ui(self):
     root.addWidget(file_row_w)
 
     # Paste area
-    root.addWidget(QLabel("CSV content:", self))
+    content_header = QWidget(self)
+    content_header_row = QHBoxLayout(content_header)
+    content_header_row.setContentsMargins(0, 0, 0, 0)
+    content_header_row.addWidget(QLabel("CSV content:", self))
+    content_header_row.addStretch()
+
+    self.paste_clipboard_btn = QPushButton("Paste Clipboard", self)
+    self.paste_clipboard_btn.clicked.connect(self.paste_clipboard)
+    content_header_row.addWidget(self.paste_clipboard_btn, 0)
+
+    self.quick_clipboard_btn = QPushButton("Quick Import Clipboard", self)
+    self.quick_clipboard_btn.clicked.connect(self.quick_import_clipboard)
+    content_header_row.addWidget(self.quick_clipboard_btn, 0)
+
+    root.addWidget(content_header)
     self.csv_text = QPlainTextEdit(self)
     self.csv_text.setPlaceholderText(
         "Paste CSV here...\n\n"
@@ -77,10 +94,7 @@ def setup_ui(self):
     deck_row = QHBoxLayout(deck_container)
     deck_row.setContentsMargins(0, 0, 0, 0)
     self.deck_combo = QComboBox(self)
-    self.deck_lock_check = QCheckBox("Lock Target Deck", self)
-    self.deck_lock_check.toggled.connect(self.on_deck_lock_toggled)
     deck_row.addWidget(self.deck_combo, 1)
-    deck_row.addWidget(self.deck_lock_check, 0)
     self.refresh_decks()
     settings_form.addRow("Target Deck:", deck_container)
 
@@ -102,7 +116,6 @@ def setup_ui(self):
     self.deck_combo.currentIndexChanged.connect(
         lambda _: subdeck_container.setEnabled(self.deck_combo.count() > 0)
     )
-
     settings_form.addRow("Add Subdeck:", subdeck_container)
 
     # Note type combo
@@ -126,12 +139,63 @@ def setup_ui(self):
     self.delimiter_combo.currentIndexChanged.connect(self.on_content_changed)
     settings_form.addRow("Delimiter:", self.delimiter_combo)
 
-    # Header checkbox
-    self.header_check = QCheckBox("First row is header", self)
-    self.header_check.toggled.connect(self.on_content_changed)
-    settings_form.addRow("", self.header_check)
-
     root.addWidget(settings_group)
+
+    # Advanced menu
+    self.advanced_menu = QMenu(self)
+    advanced_panel = QWidget(self.advanced_menu)
+    advanced_panel.setMinimumWidth(360)
+
+    advanced_layout = QVBoxLayout(advanced_panel)
+    advanced_layout.setContentsMargins(12, 12, 12, 12)
+    advanced_layout.setSpacing(10)
+
+    advanced_hint = QLabel(
+        "Advanced options for deck locking, header handling, clipboard behavior, and the built-in Anki importer.",
+        advanced_panel,
+    )
+    advanced_hint.setWordWrap(True)
+    advanced_layout.addWidget(advanced_hint)
+
+    advanced_form = QFormLayout()
+    advanced_form.setContentsMargins(0, 0, 0, 0)
+    advanced_layout.addLayout(advanced_form)
+
+    self.deck_lock_check = QCheckBox("Lock Target Deck", advanced_panel)
+    self.deck_lock_check.toggled.connect(self.on_deck_lock_toggled)
+    advanced_form.addRow("", self.deck_lock_check)
+
+    self.header_check = QCheckBox("First row is header", advanced_panel)
+    self.header_check.toggled.connect(self.on_content_changed)
+    advanced_form.addRow("", self.header_check)
+
+    self.allow_any_clipboard_toggle = QCheckBox(
+        "Allow quick import of any clipboard text", advanced_panel
+    )
+    self.allow_any_clipboard_toggle.setToolTip(
+        "Enable Quick Import Clipboard for any non-empty clipboard text, even if it does not look like CSV."
+    )
+    self.allow_any_clipboard_toggle.toggled.connect(
+        self.on_allow_any_clipboard_toggled
+    )
+    advanced_form.addRow("", self.allow_any_clipboard_toggle)
+
+    self.clipboard_confirm_toggle = QCheckBox(
+        "Confirm clipboard quick import", advanced_panel
+    )
+    self.clipboard_confirm_toggle.setToolTip(
+        "Ask for confirmation before importing clipboard content."
+    )
+    self.clipboard_confirm_toggle.toggled.connect(self.on_clipboard_confirm_toggled)
+    advanced_form.addRow("", self.clipboard_confirm_toggle)
+
+    self.anki_btn = QPushButton("Import with Anki dialog", advanced_panel)
+    self.anki_btn.clicked.connect(self.open_with_default_importer)
+    advanced_layout.addWidget(self.anki_btn)
+
+    advanced_action = QWidgetAction(self.advanced_menu)
+    advanced_action.setDefaultWidget(advanced_panel)
+    self.advanced_menu.addAction(advanced_action)
 
     # Buttons
     btns = QHBoxLayout()
@@ -139,15 +203,17 @@ def setup_ui(self):
     self.quick_btn.clicked.connect(self.do_import)
     self.quick_btn.setDefault(True)
 
-    self.anki_btn = QPushButton("Import with Anki dialog", self)
-    self.anki_btn.clicked.connect(self.open_with_default_importer)
+    self.advanced_btn = QToolButton(self)
+    self.advanced_btn.setText("Advanced")
+    self.advanced_btn.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
+    self.advanced_btn.setMenu(self.advanced_menu)
 
     cancel_btn = QPushButton("Close", self)
     cancel_btn.clicked.connect(self.reject)
 
     btns.addStretch()
+    btns.addWidget(self.advanced_btn)
     btns.addWidget(self.quick_btn)
-    btns.addWidget(self.anki_btn)
     btns.addWidget(cancel_btn)
 
     root.addLayout(btns)

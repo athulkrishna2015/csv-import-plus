@@ -13,7 +13,9 @@ def show_csv_import_plus_dialog():
         dialog.raise_()
         return
 
-    d = CSVImportPlusDialog(mw)
+    # Use a top-level window (no Qt parent) so it does not stay on top of,
+    # minimize with, or force-focus the Anki main window.
+    d = CSVImportPlusDialog()
 
     def _clear_dialog_ref(*_):
         if getattr(mw, "csv_import_plus_dialog", None) is d:
