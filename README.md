@@ -10,16 +10,18 @@ It is designed to be a faster alternative to the built-in Anki importer for comm
 - **Live Delimiter Preview**: The delimiter dropdown updates live to show the currently detected delimiter while you type or paste.
 - **Paste or Pick File**: Import data by either picking a `.csv` file or pasting CSV text directly into the dialog.
 - **Paste Clipboard Button**: Use the dedicated `Paste Clipboard` button to pull clipboard text into the editor without manual paste.
+- **Quick Import Clipboard**: Import clipboard content directly from the editor toolbar when the clipboard contains valid CSV content.
 - **Quick Import**: A one-click import that uses the auto-detected settings to add notes instantly.
 - **Lock Target Deck**: A checkbox to lock the selected target deck. The addon will remember your locked deck even after restarting Anki.
 - **Smarter Imports with Locked Deck**: When a deck is locked, you can still create a new subdeck and import into it. After the import, the target deck selection will automatically revert to your locked deck.
 - **Note Type Suggestion**: Analyzes the number of columns in your CSV to find and select the best matching note type.
 - **On-the-fly Subdeck Creation**: Quickly create a new subdeck to import your cards into, with the name conveniently pre-filled from your filename.
+- **Advanced Clipboard Options**: From **Advanced**, you can allow quick import of any non-empty clipboard text or re-enable clipboard confirmation.
 - **`#notetype` Directive**: Force a specific note type by adding a special comment to your CSV data.
 - **Tag Importing**: Automatically add tags to new notes by placing them in an extra column at the end of your data.
 - **Fallback to Anki Importer**: For complex cases, you can easily send the data to Anki's standard import dialog to handle advanced field mapping.
 
-<img width="1220" height="918" alt="Screenshot_20251101_192659" src="https://github.com/user-attachments/assets/2f18930c-83b2-4b43-aa32-8a1d8cb7cd28" />
+<img width="1113" height="918" alt="Screenshot_20260307_140529" src="https://github.com/user-attachments/assets/0a954b46-cf3d-4851-968a-871be1dfc361" />
 
 
 ## How to Use
@@ -29,11 +31,13 @@ It is designed to be a faster alternative to the built-in Anki importer for comm
     -   Click **"Pick File..."** to select a `.csv` file.
     -   Click **"Paste Clipboard"** to insert the current clipboard text into the editor.
     -   Or, paste your CSV-formatted text directly into the editor.
-3.  The status bar updates live to show the detected delimiter, the number of rows, and the suggested note type. The delimiter dropdown also shows a live auto-detect preview.
-4.  Choose a target **Deck**. You can also type a name in the **"Create Subdeck"** field and click the button to create a new deck inside the one selected above.
-5.  If the suggested **Note Type** is not correct, you can manually select another one from the dropdown.
-6.  Open **"Advanced"** for delimiter, header, clipboard, subdeck, deck lock, and built-in Anki importer options when needed.
-7.  Click **"Quick Import"** to import the notes immediately using the current settings.
+3.  Use **"Quick Import Clipboard"** beside **"Paste Clipboard"** to import directly from the clipboard. By default, it is enabled only when the clipboard contains valid CSV content.
+4.  The status bar updates live to show the detected delimiter, the number of rows, and the suggested note type. The delimiter dropdown also shows a live auto-detect preview.
+5.  Choose a target **Deck**. You can also type a name in the **"Create Subdeck"** field and click the button to create a new deck inside the one selected above.
+6.  If the suggested **Note Type** is not correct, you can manually select another one from the dropdown.
+7.  Adjust the **Delimiter** if needed.
+8.  Open **"Advanced"** for header-row handling, deck lock, clipboard override or confirmation, and the built-in Anki importer.
+9.  Click **"Quick Import"** to import the notes immediately using the current settings.
 
 Import status is shown inline in the main addon window.
 
@@ -67,9 +71,11 @@ The first note will be tagged `geography` and `europe`, and the second will be t
 
 ### [2026-03-07]
 
-- **Changed**: Moved advanced controls into a dedicated **Advanced** menu to simplify the main import window.
-- **Added**: New option to allow **Quick Import Clipboard** for any non-empty clipboard text without requiring CSV-like validation.
-- **Added**: Dedicated **Paste Clipboard** button documentation in the main workflow and feature list.
+- **Added**: Dedicated **Paste Clipboard** and **Quick Import Clipboard** actions beside the editor header for faster clipboard workflows.
+- **Changed**: **Quick Import Clipboard** is now disabled by default unless the clipboard contains valid CSV content.
+- **Changed**: **Add Subdeck** and **Delimiter** remain in the main window, while header, deck lock, clipboard behavior, and the built-in importer stay under **Advanced**.
+- **Added**: New **Advanced** option to allow **Quick Import Clipboard** for any non-empty clipboard text.
+- **Changed**: Clipboard quick-import confirmation is now off by default; when enabled, it shows import details plus an embedded scrollable preview.
 
 ### [2026-02-23]
 
