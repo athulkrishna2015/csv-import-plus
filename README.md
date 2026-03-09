@@ -21,7 +21,14 @@ It is designed to be a faster alternative to the built-in Anki importer for comm
 - **Tag Importing**: Automatically add tags to new notes by placing them in an extra column at the end of your data.
 - **Fallback to Anki Importer**: For complex cases, you can easily send the data to Anki's standard import dialog to handle advanced field mapping.
 
-<img width="1113" height="918" alt="Screenshot_20260307_140529" src="https://github.com/user-attachments/assets/0a954b46-cf3d-4851-968a-871be1dfc361" />
+## AI Assistants for CSV Generation
+
+To help you create CSV data from your documents, you can use our custom AI tools:
+
+-   **[Gemini CSV Creator](https://gemini.google.com/gem/1k_mMJwsDi040LcxEdTsReGiZnomCv5VQ?usp=sharing)**: Simply upload or paste your document, and it will generate the CSV content ready for "CSV Import Plus".
+-   **[Anki Flash Card Gen v4.6 (GPT)](https://chatgpt.com/g/g-6970ad9011508191a896ddf804f3eb2b-anki-flsh-card-gen-v46)**: A specialized custom GPT for generating high-quality Anki cards in CSV format.
+
+<img width="1220" height="918" alt="Screenshot_20251101_192659" src="https://github.com/user-attachments/assets/2f18930c-83b2-4b43-aa32-8a1d8cb7cd28" />
 
 
 ## How to Use
@@ -68,6 +75,11 @@ What is 2+2?,4,math basics
 The first note will be tagged `geography` and `europe`, and the second will be tagged `math` and `basics`.
 
 ## Changelog
+
+### [2026-03-09]
+
+- **Added**: Direct links to **Gemini CSV Creator** and **Anki Flash Card Gen (GPT)** in the UI and README to help users generate CSV data from documents.
+- **Changed**: Improved UI layout with a tabbed interface for better organization of Import and Advanced settings.
 
 ### [2026-03-07]
 

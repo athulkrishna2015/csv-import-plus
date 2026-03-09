@@ -1,6 +1,6 @@
-# -*- coding: utf-8 -*-
-
+import os
 from aqt.qt import (
+    QApplication,
     QCheckBox,
     QComboBox,
     QFormLayout,
@@ -11,62 +11,79 @@ from aqt.qt import (
     QMenu,
     QPushButton,
     QPlainTextEdit,
+    QScrollArea,
+    QTabWidget,
     QToolButton,
     QVBoxLayout,
     QWidget,
     QWidgetAction,
+    QPixmap,
+    Qt,
 )
 
 
 def setup_ui(self):
     self.setWindowTitle("CSV Import +")
-    self.setMinimumSize(760, 560)
+    self.setMinimumSize(800, 600)
 
-    root = QVBoxLayout(self)
+    # Use a QTabWidget as the root
+    self.tabs = QTabWidget(self)
+    root_layout = QVBoxLayout(self)
+    root_layout.addWidget(self.tabs)
+    self.setLayout(root_layout)
+
+    # --- Import Tab ---
+    import_tab = QWidget()
+    self.tabs.addTab(import_tab, "Import")
+    import_layout = QVBoxLayout(import_tab)
 
     instr = QLabel(
-        "Paste CSV or choose a CSV file, adjust options, pick deck and note type, then import.\n"
-        "Supported delimiters: comma, tab, semicolon, pipe. Directives: #notetype:Basic or #notetype:Cloze\n"
-        "Quick Import adds notes directly; use Advanced for delimiter, header, clipboard, and fallback import options."
+        "Paste CSV or choose a CSV file, adjust options, pick deck and note type, then import.<br>"
+        "Supported delimiters: comma, tab, semicolon, pipe. Directives: #notetype:Basic or #notetype:Cloze<br>"
+        "Quick Import adds notes directly; use Advanced for options.<br><br>"
+        "<b>Tips:</b> Generate CSV using <a href='https://gemini.google.com/gem/1k_mMJwsDi040LcxEdTsReGiZnomCv5VQ?usp=sharing'>Gemini CSV Creator</a> "
+        "or <a href='https://chatgpt.com/g/g-6970ad9011508191a896ddf804f3eb2b-anki-flsh-card-gen-v46'>Custom GPT</a>."
     )
     instr.setWordWrap(True)
-    root.addWidget(instr)
+    instr.setOpenExternalLinks(True)
+    instr.setTextFormat(Qt.TextFormat.RichText)
+    import_layout.addWidget(instr)
 
-    # File picker row (visible on main screen)
-    file_row_w = QWidget(self)
+    # File picker row
+    file_row_w = QWidget(import_tab)
     file_row = QHBoxLayout(file_row_w)
     file_row.setContentsMargins(0, 0, 0, 0)
 
-    self.file_edit = QLineEdit(self)
+    self.file_edit = QLineEdit(import_tab)
     self.file_edit.setReadOnly(True)
     self.file_edit.setPlaceholderText("No file selected…")
 
-    self.browse_btn = QPushButton("Browse…", self)
+    self.browse_btn = QPushButton("Browse…", import_tab)
     self.browse_btn.clicked.connect(self.pick_file)
 
-    file_row.addWidget(QLabel("CSV file:", self))
+    file_row.addWidget(QLabel("CSV file:", import_tab))
     file_row.addWidget(self.file_edit, 1)
     file_row.addWidget(self.browse_btn, 0)
 
-    root.addWidget(file_row_w)
+    import_layout.addWidget(file_row_w)
 
     # Paste area
-    content_header = QWidget(self)
+    content_header = QWidget(import_tab)
     content_header_row = QHBoxLayout(content_header)
     content_header_row.setContentsMargins(0, 0, 0, 0)
-    content_header_row.addWidget(QLabel("CSV content:", self))
+    content_header_row.addWidget(QLabel("CSV content:", import_tab))
     content_header_row.addStretch()
 
-    self.paste_clipboard_btn = QPushButton("Paste Clipboard", self)
+    self.paste_clipboard_btn = QPushButton("Paste Clipboard", import_tab)
     self.paste_clipboard_btn.clicked.connect(self.paste_clipboard)
     content_header_row.addWidget(self.paste_clipboard_btn, 0)
 
-    self.quick_clipboard_btn = QPushButton("Quick Import Clipboard", self)
+    self.quick_clipboard_btn = QPushButton("Quick Import Clipboard", import_tab)
     self.quick_clipboard_btn.clicked.connect(self.quick_import_clipboard)
     content_header_row.addWidget(self.quick_clipboard_btn, 0)
 
-    root.addWidget(content_header)
-    self.csv_text = QPlainTextEdit(self)
+    import_layout.addWidget(content_header)
+    self.csv_text = QPlainTextEdit(import_tab)
     self.csv_text.setPlaceholderText(
         "Paste CSV here...\n\n"
         "#notetype:Basic\n"
@@ -78,35 +95,35 @@ def setup_ui(self):
         "{{c1::Humans}} landed on the moon in {{c1::1969}}.,,space"
     )
     self.csv_text.textChanged.connect(self.schedule_content_changed)
-    root.addWidget(self.csv_text, 1)
+    import_layout.addWidget(self.csv_text, 1)
 
     # Status
     self.status_label = QLabel("")
     self.status_label.setStyleSheet("color: #21808D; font-weight: 500;")
-    root.addWidget(self.status_label)
+    import_layout.addWidget(self.status_label)
 
     # Settings
-    settings_group = QGroupBox("Import Settings", self)
+    settings_group = QGroupBox("Import Settings", import_tab)
     settings_form = QFormLayout(settings_group)
 
     # Deck combo
-    deck_container = QWidget(self)
+    deck_container = QWidget(import_tab)
     deck_row = QHBoxLayout(deck_container)
     deck_row.setContentsMargins(0, 0, 0, 0)
-    self.deck_combo = QComboBox(self)
+    self.deck_combo = QComboBox(import_tab)
     deck_row.addWidget(self.deck_combo, 1)
     self.refresh_decks()
     settings_form.addRow("Target Deck:", deck_container)
 
     # Subdeck creation
-    subdeck_container = QWidget(self)
+    subdeck_container = QWidget(import_tab)
     subdeck_row = QHBoxLayout(subdeck_container)
     subdeck_row.setContentsMargins(0, 0, 0, 0)
 
-    self.subdeck_edit = QLineEdit(self)
+    self.subdeck_edit = QLineEdit(import_tab)
     self.subdeck_edit.setPlaceholderText("New subdeck name")
 
-    self.create_subdeck_btn = QPushButton("Create subdeck", self)
+    self.create_subdeck_btn = QPushButton("Create subdeck", import_tab)
     self.create_subdeck_btn.clicked.connect(self.create_subdeck)
 
     subdeck_row.addWidget(self.subdeck_edit, 1)
@@ -119,13 +136,13 @@ def setup_ui(self):
     settings_form.addRow("Add Subdeck:", subdeck_container)
 
     # Note type combo
-    self.notetype_combo = QComboBox(self)
+    self.notetype_combo = QComboBox(import_tab)
     self.model_infos = self.get_model_infos()
     self.notetype_combo.addItems([m.name for m in self.model_infos])
     settings_form.addRow("Note Type:", self.notetype_combo)
 
     # Delimiter selector
-    self.delimiter_combo = QComboBox(self)
+    self.delimiter_combo = QComboBox(import_tab)
     self.delimiter_combo.addItems(
         [
             "Auto-detect",
@@ -139,38 +156,37 @@ def setup_ui(self):
     self.delimiter_combo.currentIndexChanged.connect(self.on_content_changed)
     settings_form.addRow("Delimiter:", self.delimiter_combo)
 
-    root.addWidget(settings_group)
+    import_layout.addWidget(settings_group)
 
-    # Advanced menu
-    self.advanced_menu = QMenu(self)
-    advanced_panel = QWidget(self.advanced_menu)
-    advanced_panel.setMinimumWidth(360)
-
-    advanced_layout = QVBoxLayout(advanced_panel)
-    advanced_layout.setContentsMargins(12, 12, 12, 12)
-    advanced_layout.setSpacing(10)
+    # --- Advanced Tab ---
+    advanced_tab = QWidget()
+    self.tabs.addTab(advanced_tab, "Advanced")
+    advanced_layout = QVBoxLayout(advanced_tab)
+    advanced_layout.setContentsMargins(20, 20, 20, 20)
+    advanced_layout.setSpacing(15)
 
     advanced_hint = QLabel(
         "Advanced options for deck locking, header handling, clipboard behavior, and the built-in Anki importer.",
-        advanced_panel,
+        advanced_tab,
     )
     advanced_hint.setWordWrap(True)
     advanced_layout.addWidget(advanced_hint)
 
     advanced_form = QFormLayout()
     advanced_form.setContentsMargins(0, 0, 0, 0)
+    advanced_form.setSpacing(10)
     advanced_layout.addLayout(advanced_form)
 
-    self.deck_lock_check = QCheckBox("Lock Target Deck", advanced_panel)
+    self.deck_lock_check = QCheckBox("Lock Target Deck", advanced_tab)
     self.deck_lock_check.toggled.connect(self.on_deck_lock_toggled)
     advanced_form.addRow("", self.deck_lock_check)
 
-    self.header_check = QCheckBox("First row is header", advanced_panel)
+    self.header_check = QCheckBox("First row is header", advanced_tab)
     self.header_check.toggled.connect(self.on_content_changed)
     advanced_form.addRow("", self.header_check)
 
     self.allow_any_clipboard_toggle = QCheckBox(
-        "Allow quick import of any clipboard text", advanced_panel
+        "Allow quick import of any clipboard text", advanced_tab
     )
     self.allow_any_clipboard_toggle.setToolTip(
         "Enable Quick Import Clipboard for any non-empty clipboard text, even if it does not look like CSV."
@@ -181,7 +197,7 @@ def setup_ui(self):
     advanced_form.addRow("", self.allow_any_clipboard_toggle)
 
     self.clipboard_confirm_toggle = QCheckBox(
-        "Confirm clipboard quick import", advanced_panel
+        "Confirm clipboard quick import", advanced_tab
     )
     self.clipboard_confirm_toggle.setToolTip(
         "Ask for confirmation before importing clipboard content."
@@ -189,32 +205,87 @@ def setup_ui(self):
     self.clipboard_confirm_toggle.toggled.connect(self.on_clipboard_confirm_toggled)
     advanced_form.addRow("", self.clipboard_confirm_toggle)
 
-    self.anki_btn = QPushButton("Import with Anki dialog", advanced_panel)
+    # Built-in importer button
+    self.anki_btn = QPushButton("Import with Anki dialog", advanced_tab)
     self.anki_btn.clicked.connect(self.open_with_default_importer)
     advanced_layout.addWidget(self.anki_btn)
 
-    advanced_action = QWidgetAction(self.advanced_menu)
-    advanced_action.setDefaultWidget(advanced_panel)
-    self.advanced_menu.addAction(advanced_action)
+    advanced_layout.addStretch()
 
-    # Buttons
+    # --- Restore buttons to Import tab ---
     btns = QHBoxLayout()
-    self.quick_btn = QPushButton("Quick Import", self)
+    self.quick_btn = QPushButton("Quick Import", import_tab)
     self.quick_btn.clicked.connect(self.do_import)
     self.quick_btn.setDefault(True)
 
-    self.advanced_btn = QToolButton(self)
-    self.advanced_btn.setText("Advanced")
-    self.advanced_btn.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
-    self.advanced_btn.setMenu(self.advanced_menu)
-
-    cancel_btn = QPushButton("Close", self)
+    cancel_btn = QPushButton("Close", import_tab)
     cancel_btn.clicked.connect(self.reject)
 
     btns.addStretch()
-    btns.addWidget(self.advanced_btn)
     btns.addWidget(self.quick_btn)
     btns.addWidget(cancel_btn)
+    import_layout.addLayout(btns)
 
-    root.addLayout(btns)
-    self.setLayout(root)
+    # --- Support Tab ---
+    support_tab = QWidget()
+    self.tabs.addTab(support_tab, "Support")
+    support_layout = QVBoxLayout(support_tab)
+    support_layout.setContentsMargins(10, 10, 10, 10)
+
+    support_instr = QLabel(
+        "If you find this addon useful, consider supporting the development through the following methods:"
+    )
+    support_instr.setWordWrap(True)
+    support_instr.setAlignment(Qt.AlignmentFlag.AlignCenter)
+    support_layout.addWidget(support_instr)
+
+    # Scroll area for QR codes
+    scroll = QScrollArea(support_tab)
+    scroll.setWidgetResizable(True)
+    scroll_content = QWidget()
+    qr_list = QVBoxLayout(scroll_content)
+    qr_list.setAlignment(Qt.AlignmentFlag.AlignHCenter)
+    qr_list.setSpacing(30)
+    scroll.setWidget(scroll_content)
+    support_layout.addWidget(scroll)
+
+    base_path = os.path.dirname(__file__)
+
+    def add_qr(name, address, filename):
+        container = QWidget()
+        vbox = QVBoxLayout(container)
+        vbox.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        title = QLabel(f"<b>{name}</b>")
+        title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        vbox.addWidget(title)
+
+        qr_label = QLabel()
+        qr_path = os.path.join(base_path, "Support", filename)
+        pixmap = QPixmap(qr_path)
+        if not pixmap.isNull():
+            qr_label.setPixmap(pixmap.scaled(400, 400, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation))
+        else:
+            qr_label.setText("Image not found")
+        qr_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        vbox.addWidget(qr_label)
+
+        addr_row = QHBoxLayout()
+        addr_label = QLineEdit(address)
+        addr_label.setReadOnly(True)
+        addr_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        addr_label.setStyleSheet("background: transparent; border: none;")
+        
+        copy_btn = QPushButton("Copy")
+        copy_btn.setFixedWidth(60)
+        copy_btn.clicked.connect(lambda _, a=address: QApplication.clipboard().setText(a))
+        
+        addr_row.addWidget(addr_label, 1)
+        addr_row.addWidget(copy_btn)
+        vbox.addLayout(addr_row)
+
+        qr_list.addWidget(container)
+
+    add_qr("UPI", "athulkrishnasv2015-2@okhdfcbank", "UPI.jpg")
+    add_qr("BTC", "bc1qrrek3m7sr33qujjrktj949wav6mehdsk057cfx", "BTC.jpg")
+    add_qr("ETH", "0xce6899e4903EcB08bE5Be65E44549fadC3F45D27", "ETH.jpg")
