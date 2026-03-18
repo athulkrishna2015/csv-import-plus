@@ -96,7 +96,7 @@ New-Item -ItemType SymbolicLink -Path "$env:APPDATA\Anki2\addons21\csv_import_pl
 - **Changed**: Moved the Anki import dialog button to the main Import tab footer.
 - **Changed**: The Anki dialog now uses the current Anki importer flow and keeps temp CSV files until the dialog closes.
 - **Added**: Basic unit tests for delimiter detection and CSV helpers.
-- **Changed**: Updated build/version scripts to support `major.minor[.patch]` versions (current version: 2.7).
+- **Changed**: Updated build/version scripts to support `major.minor[.patch]` versions.
 
 ### [2026-03-09]
 

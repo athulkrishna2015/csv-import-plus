@@ -62,7 +62,7 @@ python bump.py
 python new_version.py 2.7 addon
 ```
 
-**Versioning rule:** versions follow `major.minor` or `major.minor.patch` (e.g., `2.7` or `2.7.1`). Current version is **2.7**.
+**Versioning rule:** versions follow `major.minor` or `major.minor.patch` (e.g., `2.7` or `2.7.1`).
 
 ### 3. Running Tests
 ```shell
