@@ -28,8 +28,7 @@ To help you create CSV data from your documents, you can use our custom AI tools
 -   **[Gemini CSV Creator](https://gemini.google.com/gem/1k_mMJwsDi040LcxEdTsReGiZnomCv5VQ?usp=sharing)**: Simply upload or paste your document, and it will generate the CSV content ready for "CSV Import Plus".
 -   **[Anki Flash Card Gen v4.6 (GPT)](https://chatgpt.com/g/g-6970ad9011508191a896ddf804f3eb2b-anki-flsh-card-gen-v46)**: A specialized custom GPT for generating high-quality Anki cards in CSV format.
 
-<img width="1220" height="918" alt="Screenshot_20251101_192659" src="https://github.com/user-attachments/assets/2f18930c-83b2-4b43-aa32-8a1d8cb7cd28" />
-
+<img width="1163" height="948" alt="Screenshot_20260318_141307" src="https://github.com/user-attachments/assets/f73984c1-2231-4e03-8ecf-6eba141a016d" />
 
 ## How to Use
 
