@@ -205,11 +205,6 @@ def setup_ui(self):
     self.clipboard_confirm_toggle.toggled.connect(self.on_clipboard_confirm_toggled)
     advanced_form.addRow("", self.clipboard_confirm_toggle)
 
-    # Built-in importer button
-    self.anki_btn = QPushButton("Import with Anki dialog", advanced_tab)
-    self.anki_btn.clicked.connect(self.open_with_default_importer)
-    advanced_layout.addWidget(self.anki_btn)
-
     advanced_layout.addStretch()
 
     # --- Restore buttons to Import tab ---
@@ -218,11 +213,18 @@ def setup_ui(self):
     self.quick_btn.clicked.connect(self.do_import)
     self.quick_btn.setDefault(True)
 
+    self.anki_btn = QPushButton("Import with Anki Dialog", import_tab)
+    self.anki_btn.setToolTip(
+        "Open Anki's import dialog for advanced field mapping and options."
+    )
+    self.anki_btn.clicked.connect(self.open_with_default_importer)
+
     cancel_btn = QPushButton("Close", import_tab)
     cancel_btn.clicked.connect(self.reject)
 
     btns.addStretch()
     btns.addWidget(self.quick_btn)
+    btns.addWidget(self.anki_btn)
     btns.addWidget(cancel_btn)
     import_layout.addLayout(btns)
 

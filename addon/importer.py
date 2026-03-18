@@ -5,15 +5,74 @@ import io
 import os
 import tempfile
 
-from aqt import mw
-from aqt.utils import showWarning
-from aqt.importing import importFile
+try:
+    from aqt import mw
+    from aqt.utils import showWarning
+except Exception:  # pragma: no cover - fallback for tests
+    mw = None
+
+    def showWarning(_msg):
+        pass
 
 from . import detector
 from . import anki_helpers
 
+_PENDING_IMPORT_CLEANUP = set()
+_IMPORT_DIALOG_HOOKED = False
+
+
+def _safe_unlink(path: str) -> None:
+    try:
+        os.unlink(path)
+    except Exception:
+        pass
+
+
+def _ensure_import_dialog_cleanup_hook() -> None:
+    global _IMPORT_DIALOG_HOOKED
+    if _IMPORT_DIALOG_HOOKED:
+        return
+    try:
+        from anki.hooks import wrap
+        from aqt.import_export import import_dialog
+    except Exception:
+        return
+
+    def _after_init(self, *args, **kwargs) -> None:
+        path = getattr(getattr(self, "args", None), "path", None)
+        if not path:
+            return
+        if path in _PENDING_IMPORT_CLEANUP:
+            _PENDING_IMPORT_CLEANUP.discard(path)
+            try:
+                self.finished.connect(lambda _=None, p=path: _safe_unlink(p))
+            except Exception:
+                pass
+
+    import_dialog.ImportDialog.__init__ = wrap(
+        import_dialog.ImportDialog.__init__, _after_init, "after"
+    )
+    _IMPORT_DIALOG_HOOKED = True
+
+
+def _open_with_latest_importer(path: str) -> bool:
+    if mw is None:
+        return False
+    try:
+        from aqt.import_export.importing import import_file
+    except Exception:
+        return False
+
+    _ensure_import_dialog_cleanup_hook()
+    _PENDING_IMPORT_CLEANUP.add(path)
+    import_file(mw, path)
+    return True
+
 
 def open_with_default_importer(raw_content, deck_combo, deck_infos):
+    if mw is None:
+        showWarning("Anki is not available.")
+        return
     if not raw_content:
         showWarning("Provide CSV via Paste or choose a CSV file first.")
         return
@@ -47,16 +106,22 @@ def open_with_default_importer(raw_content, deck_combo, deck_infos):
         showWarning(f"Could not create temp file: {e}")
         return
 
+    used_latest = False
     try:
-        importFile(mw, path)
-        # Dialog intentionally stays open for further imports
+        used_latest = _open_with_latest_importer(path)
+        if not used_latest:
+            from aqt.importing import importFile
+
+            importFile(mw, path)
+            # Dialog intentionally stays open for further imports
     except Exception as e:
         showWarning(f"Could not open import dialog: {e}")
+        if used_latest:
+            _PENDING_IMPORT_CLEANUP.discard(path)
+            _safe_unlink(path)
     finally:
-        try:
-            os.unlink(path)
-        except Exception:
-            pass
+        if not used_latest:
+            _safe_unlink(path)
 
 
 def do_import(

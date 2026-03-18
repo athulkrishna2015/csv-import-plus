@@ -1,0 +1,43 @@
+# Anki related
+meta.json
+addon/meta.json
+meta.json.bak
+Meta.json
+META.json
+
+# Build artifacts
+*.ankiaddon
+addon.zip
+csv_import_plus_*.ankiaddon
+csv_import_plus_*.zip
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environments
+venv/
+.venv/
+env/
+.env
+
+# Tests
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+.pytest_cache/
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+*.swp
+*.kate-swp
+Thumbs.db
+
+# Type checking / linting
+.mypy_cache/
+.pyright/
+.ruff_cache/

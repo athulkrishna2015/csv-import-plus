@@ -19,7 +19,7 @@ It is designed to be a faster alternative to the built-in Anki importer for comm
 - **Advanced Clipboard Options**: From **Advanced**, you can allow quick import of any non-empty clipboard text or re-enable clipboard confirmation.
 - **`#notetype` Directive**: Force a specific note type by adding a special comment to your CSV data.
 - **Tag Importing**: Automatically add tags to new notes by placing them in an extra column at the end of your data.
-- **Fallback to Anki Importer**: For complex cases, you can easily send the data to Anki's standard import dialog to handle advanced field mapping.
+- **Anki Import Dialog**: Open Anki's current import screen from the main tab for advanced field mapping and options.
 
 ## AI Assistants for CSV Generation
 
@@ -43,8 +43,9 @@ To help you create CSV data from your documents, you can use our custom AI tools
 5.  Choose a target **Deck**. You can also type a name in the **"Create Subdeck"** field and click the button to create a new deck inside the one selected above.
 6.  If the suggested **Note Type** is not correct, you can manually select another one from the dropdown.
 7.  Adjust the **Delimiter** if needed.
-8.  Open **"Advanced"** for header-row handling, deck lock, clipboard override or confirmation, and the built-in Anki importer.
-9.  Click **"Quick Import"** to import the notes immediately using the current settings.
+8.  Open **"Advanced"** for header-row handling, deck lock, clipboard override or confirmation.
+9.  Click **"Import with Anki Dialog"** at the bottom if you need Anki's full import options.
+10. Click **"Quick Import"** to import the notes immediately using the current settings.
 
 Import status is shown inline in the main addon window.
 
@@ -74,7 +75,28 @@ What is 2+2?,4,math basics
 
 The first note will be tagged `geography` and `europe`, and the second will be tagged `math` and `basics`.
 
+## Development
+
+To test locally, symlink the `addon/` folder into your Anki add-ons directory using the name `csv_import_plus_dev`.
+
+**Linux/macOS:**
+```shell
+ln -s "$(pwd)/addon" "$HOME/.local/share/Anki2/addons21/csv_import_plus_dev"
+```
+
+**Windows (Admin PowerShell):**
+```powershell
+New-Item -ItemType SymbolicLink -Path "$env:APPDATA\Anki2\addons21\csv_import_plus_dev" -Target "$pwd\addon"
+```
+
 ## Changelog
+
+### [2026-03-18]
+
+- **Changed**: Moved the Anki import dialog button to the main Import tab footer.
+- **Changed**: The Anki dialog now uses the current Anki importer flow and keeps temp CSV files until the dialog closes.
+- **Added**: Basic unit tests for delimiter detection and CSV helpers.
+- **Changed**: Updated build/version scripts to support `major.minor[.patch]` versions (current version: 2.6).
 
 ### [2026-03-09]
 
