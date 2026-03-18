@@ -74,20 +74,6 @@ What is 2+2?,4,math basics
 
 The first note will be tagged `geography` and `europe`, and the second will be tagged `math` and `basics`.
 
-## Development
-
-To test locally, symlink the `addon/` folder into your Anki add-ons directory using the name `csv_import_plus_dev`.
-
-**Linux/macOS:**
-```shell
-ln -s "$(pwd)/addon" "$HOME/.local/share/Anki2/addons21/csv_import_plus_dev"
-```
-
-**Windows (Admin PowerShell):**
-```powershell
-New-Item -ItemType SymbolicLink -Path "$env:APPDATA\Anki2\addons21\csv_import_plus_dev" -Target "$pwd\addon"
-```
-
 ## Changelog
 
 ### [2026-03-18]
