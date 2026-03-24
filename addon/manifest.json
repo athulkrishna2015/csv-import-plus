@@ -1,5 +1,6 @@
 {
-    "package": "csv_import_plus",
-    "name": "CSV Import Plus",
-    "version": "2.7"
+  "package": "csv_import_plus",
+  "name": "CSV Import Plus",
+  "version": "2.8.1",
+  "human_version": "2.8.1"
 }
