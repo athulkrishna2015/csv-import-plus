@@ -46,13 +46,18 @@ def sync_version(version_string: str, addon_root: Path) -> None:
 
 def normalize_bump_part(part: str) -> str:
     normalized = (part or "").strip().lower()
+    if VERSION_RE.fullmatch(normalized):
+        return normalized
     mapped = BUMP_PART_ALIASES.get(normalized)
     if not mapped:
         valid = ", ".join(sorted(k for k in BUMP_PART_ALIASES if k != "path"))
-        raise ValueError(f"Invalid bump part '{part}'. Expected one of: {valid}")
+        raise ValueError(f"Invalid bump part '{part}'. Expected one of: {valid} or explicitly major.minor[.patch]")
     return mapped
 
 def increment_version(version_string: str, bump_part: str = "patch") -> str:
+    part = normalize_bump_part(bump_part)
+    if VERSION_RE.fullmatch(part):
+        return part
     parts = version_string.split(".")
     try:
         major = int(parts[0])

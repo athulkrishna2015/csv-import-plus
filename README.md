@@ -74,7 +74,16 @@ What is 2+2?,4,math basics
 
 The first note will be tagged `geography` and `europe`, and the second will be tagged `math` and `basics`.
 
+
 ## Changelog
+
+### [2026-03-24]
+
+- **Added**: History tab to browse imported cards by batch per session.
+- **Added**: Inline "Delete" buttons for individual cards and batches directly from the History tab.
+- **Added**: "Browse Selected" button to quickly show batch cards or specific imported cards in the Anki Browser.
+- **Changed**: Note insertions are now wrapped to natively support grouped Ctrl+Z undo operations.
+- **Changed**: Documentation split effectively between setup docs and dev docs.
 
 ### [2026-03-18]
 
