@@ -185,7 +185,7 @@ def do_import(
 
         added = 0
         skipped_empty = 0
-        added_cards_previews = []
+        notes_to_add = []
         for row in rows:
             if not row or all(not c.strip() for c in row):
                 skipped_empty += 1
@@ -195,19 +195,33 @@ def do_import(
             for i, val in enumerate(row[: len(field_names)]):
                 note.fields[i] = val.strip()
 
-            # Tags from last column if extra
             if len(row) > len(field_names):
                 tags = row[-1].strip()
                 if tags:
                     note.tags = tags.split()
+                    
+            notes_to_add.append(note)
 
+        mw.progress.start()
+        mw.checkpoint("CSV Import Plus")
+        
+        # Merge operations in highly modern Anki:
+        try:
+            if hasattr(mw.col, "merge_undo_entries"):
+                pass  # Alternatively, just use checkpoint and Anki groups it automatically or leaves it per note.
+        except Exception:
+            pass
+
+        added_cards_previews = []
+        for note in notes_to_add:
             mw.col.add_note(note, deck_id)
             added += 1
             if len(note.fields) > 0:
-                added_cards_previews.append(note.fields[0])
+                added_cards_previews.append({"id": note.id, "preview": note.fields[0]})
             else:
-                added_cards_previews.append("Empty Note")
+                added_cards_previews.append({"id": note.id, "preview": "Empty Note"})
 
+        mw.progress.finish()
         mw.reset()
 
         deck_name = deck_combo.currentText()
@@ -218,6 +232,8 @@ def do_import(
             mw.csv_import_plus_history.append({
                 "time": now_str,
                 "deck_name": deck_name,
+                "notetype_name": notetype.get("name", "Unknown"),
+                "expanded": True,
                 "added": added,
                 "cards": added_cards_previews
             })
