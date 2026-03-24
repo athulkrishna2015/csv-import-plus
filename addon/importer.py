@@ -4,6 +4,7 @@ import csv
 import io
 import os
 import tempfile
+import datetime
 
 try:
     from aqt import mw
@@ -184,6 +185,7 @@ def do_import(
 
         added = 0
         skipped_empty = 0
+        added_cards_previews = []
         for row in rows:
             if not row or all(not c.strip() for c in row):
                 skipped_empty += 1
@@ -201,10 +203,24 @@ def do_import(
 
             mw.col.add_note(note, deck_id)
             added += 1
+            if len(note.fields) > 0:
+                added_cards_previews.append(note.fields[0])
+            else:
+                added_cards_previews.append("Empty Note")
 
         mw.reset()
 
         deck_name = deck_combo.currentText()
+        if added > 0:
+            if not hasattr(mw, "csv_import_plus_history"):
+                mw.csv_import_plus_history = []
+            now_str = datetime.datetime.now().strftime("%I:%M %p")
+            mw.csv_import_plus_history.append({
+                "time": now_str,
+                "deck_name": deck_name,
+                "added": added,
+                "cards": added_cards_previews
+            })
         return {
             "added": added,
             "skipped_empty": skipped_empty,

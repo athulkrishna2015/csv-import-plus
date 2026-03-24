@@ -26,7 +26,6 @@ This repository contains the source code for the **CSV Import Plus** Anki add-on
 - `addon/meta.json`: Runtime config stored by Anki.
 - `tests/`: Unit tests (detector/importer logic).
 - `make_ankiaddon.py`: Build script that auto-bumps version and creates the `.ankiaddon` package.
-- `new_version.py`: Utility script to sync version numbers.
 - `bump.py`: Standalone script to increment the version.
 
 ---
@@ -38,7 +37,7 @@ The fastest way to test changes is to symlink the `addon/` folder into your Anki
 
 **Linux/macOS:**
 ```shell
-ln -s "$(pwd)/addon" "$HOME/.local/share/Anki2/addons21/csv_import_plus_dev"
+ln -s "$(pwd)/addon" ~/.local/share/Anki2/addons21/csv_import_plus_dev
 ```
 
 **Windows (Admin PowerShell):**
@@ -59,7 +58,7 @@ python bump.py
 
 - Set an explicit version:
 ```shell
-python new_version.py 2.7 addon
+python make_ankiaddon.py 2.7
 ```
 
 **Versioning rule:** versions follow `major.minor` or `major.minor.patch` (e.g., `2.7` or `2.7.1`).

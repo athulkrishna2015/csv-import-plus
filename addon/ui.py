@@ -19,6 +19,8 @@ from aqt.qt import (
     QWidgetAction,
     QPixmap,
     Qt,
+    QTreeWidget,
+    QTreeWidgetItem,
 )
 
 
@@ -157,6 +159,20 @@ def setup_ui(self):
     settings_form.addRow("Delimiter:", self.delimiter_combo)
 
     import_layout.addWidget(settings_group)
+
+    # --- History Tab ---
+    history_tab = QWidget()
+    self.tabs.addTab(history_tab, "History")
+    history_layout = QVBoxLayout(history_tab)
+    history_layout.setContentsMargins(10, 10, 10, 10)
+
+    self.history_tree = QTreeWidget(history_tab)
+    self.history_tree.setHeaderHidden(True)
+    history_layout.addWidget(self.history_tree)
+
+    self.clear_history_btn = QPushButton("Clear Session History", history_tab)
+    self.clear_history_btn.clicked.connect(self.clear_history)
+    history_layout.addWidget(self.clear_history_btn)
 
     # --- Advanced Tab ---
     advanced_tab = QWidget()

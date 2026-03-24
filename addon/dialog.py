@@ -16,6 +16,7 @@ from aqt.qt import (
     QTimer,
     Qt,
     QVBoxLayout,
+    QTreeWidgetItem,
 )
 
 from . import anki_helpers
@@ -49,6 +50,7 @@ class CSVImportPlusDialog(QDialog):
             )
         self.update_quick_clipboard_button_state()
         self.load_config()
+        self.refresh_history()
 
     def closeEvent(self, event):
         self.deleteLater()
@@ -368,6 +370,7 @@ class CSVImportPlusDialog(QDialog):
             self.delimiter_combo,
         )
         if result:
+            self.refresh_history()
             if clear_pasted_input:
                 # Clear only pasted input after successful import from editor/file.
                 self.csv_text.blockSignals(True)
@@ -478,3 +481,22 @@ class CSVImportPlusDialog(QDialog):
     def do_import(self):
         raw = self.get_active_raw()
         self._run_import(raw, clear_pasted_input=True)
+
+    # -------------------- History --------------------
+    def refresh_history(self):
+        self.history_tree.clear()
+        history = getattr(mw, "csv_import_plus_history", [])
+        for batch in reversed(history):
+            batch_item = QTreeWidgetItem(self.history_tree)
+            batch_item.setText(0, f"[{batch['time']}] Added {batch['added']} cards to '{batch['deck_name']}'")
+            for card in batch["cards"]:
+                card_item = QTreeWidgetItem(batch_item)
+                # truncate card preview
+                preview = (card[:150] + '...') if len(card) > 150 else card
+                card_item.setText(0, preview)
+                card_item.setFlags(card_item.flags() & ~Qt.ItemFlag.ItemIsSelectable)
+        self.history_tree.expandAll()
+
+    def clear_history(self):
+        mw.csv_import_plus_history = []
+        self.refresh_history()
