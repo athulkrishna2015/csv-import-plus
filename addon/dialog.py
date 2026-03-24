@@ -12,9 +12,10 @@ from aqt.qt import (
     QDialogButtonBox,
     QFileDialog,
     QLabel,
+    QKeySequence,
+    QShortcut,
     QPlainTextEdit,
     QTimer,
-    Qt,
     Qt,
     QVBoxLayout,
     QTreeWidgetItem,
@@ -52,7 +53,18 @@ class CSVImportPlusDialog(QDialog):
             )
         self.update_quick_clipboard_button_state()
         self.load_config()
+        self.refresh_decks()
+        self.refresh_notetypes()
         self.refresh_history()
+
+        self.undo_shortcut = QShortcut(QKeySequence("Ctrl+Z"), self)
+        self.undo_shortcut.activated.connect(self.on_anki_undo)
+        
+        self.redo_shortcut = QShortcut(QKeySequence("Ctrl+Y"), self)
+        self.redo_shortcut.activated.connect(self.on_anki_redo)
+        
+        self.redo_shortcut_shift = QShortcut(QKeySequence("Ctrl+Shift+Z"), self)
+        self.redo_shortcut_shift.activated.connect(self.on_anki_redo)
 
     def closeEvent(self, event):
         self.deleteLater()
@@ -60,6 +72,22 @@ class CSVImportPlusDialog(QDialog):
 
     # -------------------- UI --------------------
     setup_ui = ui.setup_ui
+
+    def on_anki_undo(self):
+        if getattr(self, "raw_csv_edit", None) and self.raw_csv_edit.hasFocus():
+            self.raw_csv_edit.undo()
+        else:
+            if hasattr(mw, "onUndo"):
+                mw.onUndo()
+                self.refresh_history()
+
+    def on_anki_redo(self):
+        if getattr(self, "raw_csv_edit", None) and self.raw_csv_edit.hasFocus():
+            self.raw_csv_edit.redo()
+        else:
+            if hasattr(mw, "onRedo"):
+                mw.onRedo()
+                self.refresh_history()
 
     # -------------------- Config --------------------
     def load_config(self):

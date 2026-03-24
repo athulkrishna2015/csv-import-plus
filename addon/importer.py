@@ -203,23 +203,35 @@ def do_import(
             notes_to_add.append(note)
 
         mw.progress.start()
-        mw.checkpoint("CSV Import Plus")
         
-        # Merge operations in highly modern Anki:
-        try:
-            if hasattr(mw.col, "merge_undo_entries"):
-                pass  # Alternatively, just use checkpoint and Anki groups it automatically or leaves it per note.
-        except Exception:
-            pass
+        # Merge operations in modern Anki for native batch Ctrl+Z
+        use_bulk_undo = hasattr(mw.col, "add_custom_undo_entry") and hasattr(mw.col, "merge_undo_entries")
+        undo_entry = None
+        if use_bulk_undo:
+            try:
+                undo_entry = mw.col.add_custom_undo_entry("CSV Import")
+            except Exception:
+                pass
+        else:
+            mw.checkpoint("CSV Import Plus")
 
         added_cards_previews = []
         for note in notes_to_add:
-            mw.col.add_note(note, deck_id)
-            added += 1
-            if len(note.fields) > 0:
-                added_cards_previews.append({"id": note.id, "preview": note.fields[0]})
-            else:
-                added_cards_previews.append({"id": note.id, "preview": "Empty Note"})
+            try:
+                mw.col.add_note(note, deck_id)
+                added += 1
+                if len(note.fields) > 0:
+                    added_cards_previews.append({"id": note.id, "preview": note.fields[0]})
+                else:
+                    added_cards_previews.append({"id": note.id, "preview": "Empty Note"})
+            except Exception as e:
+                pass
+
+        if use_bulk_undo and undo_entry is not None:
+            try:
+                mw.col.merge_undo_entries(undo_entry)
+            except Exception:
+                pass
 
         mw.progress.finish()
         mw.reset()
