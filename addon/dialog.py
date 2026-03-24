@@ -583,7 +583,10 @@ class CSVImportPlusDialog(QDialog):
 
     def on_history_selection_changed(self):
         selected = self.history_tree.selectedItems()
-        self.browse_history_btn.setEnabled(len(selected) > 0)
+        has_selection = len(selected) > 0
+        self.browse_history_btn.setEnabled(has_selection)
+        if hasattr(self, "delete_selected_history_btn"):
+            self.delete_selected_history_btn.setEnabled(has_selection)
 
     def browse_selected_history(self):
         selected = self.history_tree.selectedItems()
@@ -611,6 +614,48 @@ class CSVImportPlusDialog(QDialog):
         browser = aqt.dialogs.open("Browser", mw)
         browser.form.searchEdit.lineEdit().setText(query)
         browser.onSearchActivated()
+
+    def delete_selected_history(self):
+        selected = self.history_tree.selectedItems()
+        if not selected:
+            return
+
+        nids_to_del = set()
+        
+        for item in selected:
+            if item.childCount() > 0:
+                for i in range(item.childCount()):
+                    child = item.child(i)
+                    nid = child.data(0, Qt.ItemDataRole.UserRole + 1)
+                    if nid is not None:
+                        nids_to_del.add(nid)
+            else:
+                nid = item.data(0, Qt.ItemDataRole.UserRole + 1)
+                if nid is not None:
+                    nids_to_del.add(nid)
+
+        if not nids_to_del:
+            return
+
+        try:
+            mw.col.remove_notes(list(nids_to_del))
+        except Exception:
+            try:
+                mw.col.remNotes(list(nids_to_del))
+            except Exception:
+                pass
+
+        history = getattr(mw, "csv_import_plus_history", [])
+        for batch in history:
+            batch["cards"] = [
+                c for c in batch["cards"] 
+                if (isinstance(c, dict) and c.get("id") not in nids_to_del) or not isinstance(c, dict)
+            ]
+            batch["added"] = len(batch["cards"])
+            
+        history[:] = [b for b in history if b["added"] > 0]
+        
+        self.refresh_history()
 
     def delete_history_batch(self, real_idx):
         history = getattr(mw, "csv_import_plus_history", [])

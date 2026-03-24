@@ -21,6 +21,7 @@ from aqt.qt import (
     Qt,
     QTreeWidget,
     QTreeWidgetItem,
+    QAbstractItemView,
 )
 
 
@@ -171,6 +172,7 @@ def setup_ui(self):
     self.history_tree.setHeaderLabels(["History", "Action"])
     self.history_tree.header().resizeSection(0, 550)
     self.history_tree.setIndentation(15)
+    self.history_tree.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
     history_layout.addWidget(self.history_tree)
     
     self.history_tree.itemExpanded.connect(self.on_history_item_expanded)
@@ -183,6 +185,11 @@ def setup_ui(self):
     self.browse_history_btn.setEnabled(False)
     self.browse_history_btn.clicked.connect(self.browse_selected_history)
     history_btns.addWidget(self.browse_history_btn)
+
+    self.delete_selected_history_btn = QPushButton("Delete Selected", history_tab)
+    self.delete_selected_history_btn.setEnabled(False)
+    self.delete_selected_history_btn.clicked.connect(self.delete_selected_history)
+    history_btns.addWidget(self.delete_selected_history_btn)
 
     history_btns.addStretch()
 
