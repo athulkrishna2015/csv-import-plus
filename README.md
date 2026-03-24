@@ -20,6 +20,8 @@ It is designed to be a faster alternative to the built-in Anki importer for comm
 - **`#notetype` Directive**: Force a specific note type by adding a special comment to your CSV data.
 - **Tag Importing**: Automatically add tags to new notes by placing them in an extra column at the end of your data.
 - **Anki Import Dialog**: Open Anki's current import screen from the main tab for advanced field mapping and options.
+- **Session History Tab**: Keep track of imported card batches, review cards visually, and utilize the robust multi-selection feature (Ctrl/Shift + Click) to natively locate cards in the browser ("Browse Selected") or eradicate them altogether ("Delete Selected" / "Delete Batch").
+- **Persistent Memory**: Opt-in to remember your session history across dialog checks via Advanced options, safely paired alongside overarching configuration memory across Anki restarts.
 
 ## AI Assistants for CSV Generation
 
@@ -42,9 +44,10 @@ To help you create CSV data from your documents, you can use our custom AI tools
 5.  Choose a target **Deck**. You can also type a name in the **"Create Subdeck"** field and click the button to create a new deck inside the one selected above.
 6.  If the suggested **Note Type** is not correct, you can manually select another one from the dropdown.
 7.  Adjust the **Delimiter** if needed.
-8.  Open **"Advanced"** for header-row handling, deck lock, clipboard override or confirmation.
+8.  Open **"Advanced"** for header-row handling, deck lock, clipboard override or confirmation. You can also toggle History retention here.
 9.  Click **"Import with Anki Dialog"** at the bottom if you need Anki's full import options.
 10. Click **"Quick Import"** to import the notes immediately using the current settings.
+11. Navigate flexibly to the **"History"** tab anytime to review, browse, or batch-delete imported cards from your session.
 
 Import status is shown inline in the main addon window.
 
@@ -80,10 +83,12 @@ The first note will be tagged `geography` and `europe`, and the second will be t
 ### [2026-03-24]
 
 - **Added**: History tab to browse imported cards by batch per session.
-- **Added**: Inline "Delete" buttons for individual cards and batches directly from the History tab.
+- **Added**: Inline "Delete", "Delete Batch", and "Delete Selected" buttons directly inside the History tab context.
+- **Added**: Multi-select (ExtendedSelection) configuration for tracking history items.
 - **Added**: "Browse Selected" button to quickly show batch cards or specific imported cards in the Anki Browser.
-- **Changed**: Note insertions are now wrapped to natively support grouped Ctrl+Z undo operations.
-- **Changed**: Documentation split effectively between setup docs and dev docs.
+- **Added**: Advanced toggle to remember History payload persistently across window checks, while all Advanced parameters properly persist across Anki restarts.
+- **Changed**: Note insertions are now wrapped natively to support grouped Ctrl+Z undo operations effortlessly.
+- **Changed**: Documentation split effectively between setup docs (`README.md`) and dev docs (`DEVELOPMENT.md`).
 
 ### [2026-03-18]
 
