@@ -53,8 +53,6 @@ class CSVImportPlusDialog(QDialog):
             )
         self.update_quick_clipboard_button_state()
         self.load_config()
-        self.refresh_decks()
-        self.refresh_notetypes()
         self.refresh_history()
 
         self.undo_shortcut = QShortcut(QKeySequence("Ctrl+Z"), self)
