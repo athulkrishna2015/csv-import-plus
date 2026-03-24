@@ -167,12 +167,30 @@ def setup_ui(self):
     history_layout.setContentsMargins(10, 10, 10, 10)
 
     self.history_tree = QTreeWidget(history_tab)
-    self.history_tree.setHeaderHidden(True)
+    self.history_tree.setColumnCount(2)
+    self.history_tree.setHeaderLabels(["History", "Action"])
+    self.history_tree.header().resizeSection(0, 550)
+    self.history_tree.setIndentation(15)
     history_layout.addWidget(self.history_tree)
+    
+    self.history_tree.itemExpanded.connect(self.on_history_item_expanded)
+    self.history_tree.itemCollapsed.connect(self.on_history_item_collapsed)
+    self.history_tree.itemSelectionChanged.connect(self.on_history_selection_changed)
+
+    history_btns = QHBoxLayout()
+
+    self.browse_history_btn = QPushButton("Browse Selected", history_tab)
+    self.browse_history_btn.setEnabled(False)
+    self.browse_history_btn.clicked.connect(self.browse_selected_history)
+    history_btns.addWidget(self.browse_history_btn)
+
+    history_btns.addStretch()
 
     self.clear_history_btn = QPushButton("Clear Session History", history_tab)
     self.clear_history_btn.clicked.connect(self.clear_history)
-    history_layout.addWidget(self.clear_history_btn)
+    history_btns.addWidget(self.clear_history_btn)
+    
+    history_layout.addLayout(history_btns)
 
     # --- Advanced Tab ---
     advanced_tab = QWidget()
@@ -198,8 +216,12 @@ def setup_ui(self):
     advanced_form.addRow("", self.deck_lock_check)
 
     self.header_check = QCheckBox("First row is header", advanced_tab)
-    self.header_check.toggled.connect(self.on_content_changed)
+    self.header_check.toggled.connect(self.on_header_check_toggled)
     advanced_form.addRow("", self.header_check)
+
+    self.remember_history_check = QCheckBox("Remember history until manually cleared", advanced_tab)
+    self.remember_history_check.toggled.connect(self.on_remember_history_toggled)
+    advanced_form.addRow("", self.remember_history_check)
 
     self.allow_any_clipboard_toggle = QCheckBox(
         "Allow quick import of any clipboard text", advanced_tab

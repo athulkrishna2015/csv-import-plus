@@ -15,8 +15,10 @@ from aqt.qt import (
     QPlainTextEdit,
     QTimer,
     Qt,
+    Qt,
     QVBoxLayout,
     QTreeWidgetItem,
+    QPushButton,
 )
 
 from . import anki_helpers
@@ -63,6 +65,13 @@ class CSVImportPlusDialog(QDialog):
     def load_config(self):
         config = mw.addonManager.getConfig(__name__) or {}
 
+        if not getattr(mw, 'csv_import_plus_history_loaded', False):
+            if config.get("remember_history", False):
+                mw.csv_import_plus_history = config.get("saved_history", [])
+            else:
+                mw.csv_import_plus_history = []
+            mw.csv_import_plus_history_loaded = True
+
         self.confirm_clipboard_quick_import = config.get(
             CONFIG_KEY_CONFIRM_CLIPBOARD_QUICK_IMPORT, False
         )
@@ -82,18 +91,40 @@ class CSVImportPlusDialog(QDialog):
         self.deck_lock_check.blockSignals(False)
         self.locked_deck_name = config.get("locked_deck_name")
 
-        if self.deck_lock_check.isChecked() and self.locked_deck_name:
-            self.deck_combo.setCurrentText(self.locked_deck_name)
+        if hasattr(self, "header_check"):
+            self.header_check.blockSignals(True)
+            self.header_check.setChecked(config.get("first_row_header", False))
+            self.header_check.blockSignals(False)
+
+        if hasattr(self, "remember_history_check"):
+            self.remember_history_check.blockSignals(True)
+            self.remember_history_check.setChecked(config.get("remember_history", False))
+            self.remember_history_check.blockSignals(False)
+
         self.update_quick_clipboard_button_state()
 
     def save_config(self):
-        config = {
-            "deck_lock": self.deck_lock_check.isChecked(),
-            "locked_deck_name": self.locked_deck_name,
-            CONFIG_KEY_CONFIRM_CLIPBOARD_QUICK_IMPORT: self.confirm_clipboard_quick_import,
-            CONFIG_KEY_ALLOW_ANY_CLIPBOARD_QUICK_IMPORT: self.allow_any_clipboard_quick_import,
-        }
+        config = mw.addonManager.getConfig(__name__) or {}
+        config["deck_lock"] = self.deck_lock_check.isChecked()
+        config["locked_deck_name"] = self.locked_deck_name
+        config[CONFIG_KEY_CONFIRM_CLIPBOARD_QUICK_IMPORT] = self.confirm_clipboard_quick_import
+        config[CONFIG_KEY_ALLOW_ANY_CLIPBOARD_QUICK_IMPORT] = self.allow_any_clipboard_quick_import
+        
+        if hasattr(self, "header_check"):
+            config["first_row_header"] = self.header_check.isChecked()
+            
+        if hasattr(self, "remember_history_check"):
+            config["remember_history"] = self.remember_history_check.isChecked()
+            if self.remember_history_check.isChecked():
+                config["saved_history"] = getattr(mw, "csv_import_plus_history", [])
+            else:
+                config.pop("saved_history", None)
+
         mw.addonManager.writeConfig(__name__, config)
+
+    def save_history_if_needed(self):
+        if hasattr(self, "remember_history_check") and self.remember_history_check.isChecked():
+            self.save_config()
 
     def on_deck_lock_toggled(self, checked):
         if checked:
@@ -110,6 +141,13 @@ class CSVImportPlusDialog(QDialog):
         self.allow_any_clipboard_quick_import = checked
         self.save_config()
         self.update_quick_clipboard_button_state()
+
+    def on_header_check_toggled(self, checked):
+        self.save_config()
+        self.on_content_changed()
+
+    def on_remember_history_toggled(self, checked):
+        self.save_config()
 
     # -------------------- Deck/model helpers --------------------
     def refresh_decks(self, select_name: str | None = None):
@@ -484,18 +522,135 @@ class CSVImportPlusDialog(QDialog):
 
     # -------------------- History --------------------
     def refresh_history(self):
+        self.history_tree.blockSignals(True)
         self.history_tree.clear()
         history = getattr(mw, "csv_import_plus_history", [])
-        for batch in reversed(history):
+        for i, batch in enumerate(reversed(history)):
+            real_idx = len(history) - 1 - i
             batch_item = QTreeWidgetItem(self.history_tree)
-            batch_item.setText(0, f"[{batch['time']}] Added {batch['added']} cards to '{batch['deck_name']}'")
-            for card in batch["cards"]:
+            batch_item.setData(0, Qt.ItemDataRole.UserRole, real_idx)
+            
+            notetype_name = batch.get("notetype_name", "Unknown")
+            batch_item.setText(0, f"[{batch['time']}] Added {batch['added']} cards to '{batch['deck_name']}' ({notetype_name})")
+            
+            batch_del_btn = QPushButton("Delete Batch")
+            batch_del_btn.setStyleSheet("color: #d32f2f; font-weight: bold; padding: 2px 8px; margin: 2px;")
+            batch_del_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+            batch_del_btn.clicked.connect(lambda _, bidx=real_idx: self.delete_history_batch(bidx))
+            self.history_tree.setItemWidget(batch_item, 1, batch_del_btn)
+            
+            for c_idx, card in enumerate(batch["cards"]):
                 card_item = QTreeWidgetItem(batch_item)
-                # truncate card preview
-                preview = (card[:150] + '...') if len(card) > 150 else card
+                
+                if isinstance(card, dict):
+                    preview_text = card.get("preview", "")
+                    nid = card.get("id")
+                else:
+                    preview_text = str(card)
+                    nid = None
+
+                preview = (preview_text[:150] + '...') if len(preview_text) > 150 else preview_text
                 card_item.setText(0, preview)
-                card_item.setFlags(card_item.flags() & ~Qt.ItemFlag.ItemIsSelectable)
-        self.history_tree.expandAll()
+                if nid is not None:
+                    card_item.setData(0, Qt.ItemDataRole.UserRole + 1, nid)
+                    
+                card_del_btn = QPushButton("Delete")
+                card_del_btn.setStyleSheet("color: #d32f2f; padding: 0px 8px;")
+                card_del_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+                card_del_btn.clicked.connect(lambda _, bidx=real_idx, cid=c_idx: self.delete_history_card(bidx, cid))
+                self.history_tree.setItemWidget(card_item, 1, card_del_btn)
+            
+            batch_item.setExpanded(batch.get("expanded", True))
+            
+        self.history_tree.blockSignals(False)
+        self.save_history_if_needed()
+
+    def on_history_item_expanded(self, item):
+        real_idx = item.data(0, Qt.ItemDataRole.UserRole)
+        if real_idx is not None and isinstance(real_idx, int):
+            history = getattr(mw, "csv_import_plus_history", [])
+            if 0 <= real_idx < len(history):
+                history[real_idx]["expanded"] = True
+                self.save_history_if_needed()
+
+    def on_history_item_collapsed(self, item):
+        real_idx = item.data(0, Qt.ItemDataRole.UserRole)
+        if real_idx is not None and isinstance(real_idx, int):
+            history = getattr(mw, "csv_import_plus_history", [])
+            if 0 <= real_idx < len(history):
+                history[real_idx]["expanded"] = False
+                self.save_history_if_needed()
+
+    def on_history_selection_changed(self):
+        selected = self.history_tree.selectedItems()
+        self.browse_history_btn.setEnabled(len(selected) > 0)
+
+    def browse_selected_history(self):
+        selected = self.history_tree.selectedItems()
+        if not selected:
+            return
+
+        nids = []
+        for item in selected:
+            if item.childCount() > 0:
+                for i in range(item.childCount()):
+                    child = item.child(i)
+                    nid = child.data(0, Qt.ItemDataRole.UserRole + 1)
+                    if nid is not None:
+                        nids.append(nid)
+            else:
+                nid = item.data(0, Qt.ItemDataRole.UserRole + 1)
+                if nid is not None:
+                    nids.append(nid)
+
+        if not nids:
+            return
+
+        query = f"nid:{','.join(map(str, set(nids)))}"
+        import aqt
+        browser = aqt.dialogs.open("Browser", mw)
+        browser.form.searchEdit.lineEdit().setText(query)
+        browser.onSearchActivated()
+
+    def delete_history_batch(self, real_idx):
+        history = getattr(mw, "csv_import_plus_history", [])
+        if 0 <= real_idx < len(history):
+            batch = history[real_idx]
+            nids = []
+            for c in batch["cards"]:
+                if isinstance(c, dict) and c.get("id"):
+                    nids.append(c["id"])
+            if nids:
+                try:
+                    mw.col.remove_notes(nids)
+                except Exception:
+                    try:
+                        mw.col.remNotes(nids)
+                    except Exception:
+                        pass
+            del history[real_idx]
+            self.refresh_history()
+
+    def delete_history_card(self, real_idx, card_idx):
+        history = getattr(mw, "csv_import_plus_history", [])
+        if 0 <= real_idx < len(history):
+            batch = history[real_idx]
+            cards = batch["cards"]
+            if 0 <= card_idx < len(cards):
+                c = cards[card_idx]
+                if isinstance(c, dict) and c.get("id"):
+                    try:
+                        mw.col.remove_notes([c["id"]])
+                    except Exception:
+                        try:
+                            mw.col.remNotes([c["id"]])
+                        except Exception:
+                            pass
+                del cards[card_idx]
+                batch["added"] = len(cards)
+                if not cards:
+                    del history[real_idx]
+                self.refresh_history()
 
     def clear_history(self):
         mw.csv_import_plus_history = []
