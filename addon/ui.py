@@ -1,4 +1,5 @@
 import os
+from aqt.utils import openLink
 from aqt.qt import (
     QApplication,
     QCheckBox,
@@ -21,8 +22,11 @@ from aqt.qt import (
     Qt,
     QTreeWidget,
     QTreeWidgetItem,
+    QTreeWidgetItem,
     QAbstractItemView,
 )
+
+from aqt.webview import AnkiWebView
 
 
 def setup_ui(self):
@@ -285,6 +289,13 @@ def setup_ui(self):
     support_instr.setWordWrap(True)
     support_instr.setAlignment(Qt.AlignmentFlag.AlignCenter)
     support_layout.addWidget(support_instr)
+    
+    # Ko-fi Button
+    kofi_btn = QPushButton("Support on Ko-fi")
+    kofi_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+    kofi_btn.clicked.connect(lambda: openLink("https://ko-fi.com/D1D01W6NQT"))
+    kofi_btn.setStyleSheet("background-color: #29abe0; color: white; font-weight: bold; padding: 10px; border-radius: 5px;")
+    support_layout.addWidget(kofi_btn)
 
     # Scroll area for QR codes
     scroll = QScrollArea(support_tab)
@@ -295,6 +306,29 @@ def setup_ui(self):
     qr_list.setSpacing(30)
     scroll.setWidget(scroll_content)
     support_layout.addWidget(scroll)
+
+    # Ko-fi Widget (Embedded Script)
+    self.support_webview = AnkiWebView(support_tab)
+    self.support_webview.setFixedHeight(40)  # Enough for the widget button if not floating, but here it's floating
+    # For a floating widget, we need the script in a page. 
+    # The widget itself is fixed/absolute positioned by the script.
+    kofi_html = f"""
+    <html>
+    <head>
+    <style>
+      body {{ background-color: transparent; margin: 0; padding: 0; overflow: hidden; }}
+    </style>
+    <script type='text/javascript' src='https://storage.ko-fi.com/cdn/widget/Widget_2.js'></script>
+    <script type='text/javascript'>
+      kofiwidget2.init('Support me on Ko-fi', '#72a4f2', 'D1D01W6NQT');
+      kofiwidget2.draw();
+    </script>
+    </head>
+    <body></body>
+    </html>
+    """
+    self.support_webview.setHtml(kofi_html)
+    support_layout.addWidget(self.support_webview)
 
     base_path = os.path.dirname(__file__)
 

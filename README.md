@@ -1,5 +1,6 @@
 # [CSV Import Plus](https://ankiweb.net/shared/info/196373966) for Anki
 
+
 CSV Import Plus is an Anki add-on that provides a streamlined and intelligent workflow for importing notes from CSV files or pasted text. It simplifies the import process by auto-detecting formats, suggesting the best note type, and allowing for quick imports with minimal configuration.
 
 It is designed to be a faster alternative to the built-in Anki importer for common import scenarios.
@@ -77,6 +78,12 @@ What is 2+2?,4,math basics
 
 The first note will be tagged `geography` and `europe`, and the second will be tagged `math` and `basics`.
 
+
+## Support
+
+If you find this add-on useful, please consider supporting its development:
+
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/D1D01W6NQT)
 
 ## Changelog
 
