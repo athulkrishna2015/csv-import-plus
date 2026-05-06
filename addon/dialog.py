@@ -193,7 +193,7 @@ class CSVImportPlusDialog(QDialog):
     def pick_file(self):
         start_dir = mw.pm.profile.get(PROFILE_KEY_LAST_DIR, "")
         path, _ = QFileDialog.getOpenFileName(
-            mw, "Select CSV to Import", start_dir, "CSV Files (*.csv)"
+            mw, "Select CSV to Import", start_dir, "Text/CSV Files (*.csv *.txt *.tsv);;All Files (*)"
         )
         if not path:
             return

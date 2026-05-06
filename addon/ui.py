@@ -4,6 +4,7 @@ from aqt.qt import (
     QApplication,
     QCheckBox,
     QComboBox,
+    QCompleter,
     QFormLayout,
     QGroupBox,
     QHBoxLayout,
@@ -118,6 +119,15 @@ def setup_ui(self):
     deck_row = QHBoxLayout(deck_container)
     deck_row.setContentsMargins(0, 0, 0, 0)
     self.deck_combo = QComboBox(import_tab)
+    self.deck_combo.setEditable(True)
+    self.deck_combo.setInsertPolicy(QComboBox.InsertPolicy.NoInsert)
+    
+    completer = QCompleter(self.deck_combo.model(), self.deck_combo)
+    completer.setCompletionMode(QCompleter.CompletionMode.PopupCompletion)
+    completer.setFilterMode(Qt.MatchFlag.MatchContains)
+    completer.setCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
+    self.deck_combo.setCompleter(completer)
+    
     deck_row.addWidget(self.deck_combo, 1)
     self.refresh_decks()
     settings_form.addRow("Target Deck:", deck_container)

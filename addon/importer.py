@@ -80,6 +80,8 @@ def open_with_default_importer(raw_content, deck_combo, deck_infos):
 
     # Select deck for sane defaults
     deck_idx = deck_combo.currentIndex()
+    if deck_idx < 0:
+        deck_idx = deck_combo.findText(deck_combo.currentText())
     deck_id = anki_helpers.deck_id_from_index(deck_infos, deck_idx)
     if deck_id is not None:
         try:
@@ -149,6 +151,8 @@ def do_import(
     csv_content = detector.strip_directive_lines(raw_content)
 
     deck_idx = deck_combo.currentIndex()
+    if deck_idx < 0:
+        deck_idx = deck_combo.findText(deck_combo.currentText())
     model_idx = notetype_combo.currentIndex()
     deck_id = anki_helpers.deck_id_from_index(deck_infos, deck_idx)
     model_id = anki_helpers.model_id_from_index(model_infos, model_idx)

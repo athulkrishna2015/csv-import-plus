@@ -9,7 +9,8 @@ It is designed to be a faster alternative to the built-in Anki importer for comm
 
 - **Auto-Detection**: Automatically detects the CSV delimiter (comma, tab, semicolon, etc.) and the most likely note type for your data.
 - **Live Delimiter Preview**: The delimiter dropdown updates live to show the currently detected delimiter while you type or paste.
-- **Paste or Pick File**: Import data by either picking a `.csv` file or pasting CSV text directly into the dialog.
+- **Paste or Pick File**: Import data by either picking a `.csv`, `.txt`, or `.tsv` file, or pasting CSV text directly into the dialog.
+- **Searchable Deck Selection**: The target deck dropdown is now searchable. Simply type part of a deck name to filter and select your destination quickly.
 - **Paste Clipboard Button**: Use the dedicated `Paste Clipboard` button to pull clipboard text into the editor without manual paste.
 - **Quick Import Clipboard**: Import clipboard content directly from the editor toolbar when the clipboard contains valid CSV content.
 - **Quick Import**: A one-click import that uses the auto-detected settings to add notes instantly.
@@ -37,12 +38,12 @@ To help you create CSV data from your documents, you can use our custom AI tools
 
 1.  Go to **Tools → CSV Import +...** in Anki's main menu.
 2.  In the dialog, you can either:
-    -   Click **"Pick File..."** to select a `.csv` file.
+    -   Click **"Pick File..."** to select a `.csv`, `.txt`, or `.tsv` file.
     -   Click **"Paste Clipboard"** to insert the current clipboard text into the editor.
     -   Or, paste your CSV-formatted text directly into the editor.
 3.  Use **"Quick Import Clipboard"** beside **"Paste Clipboard"** to import directly from the clipboard. By default, it is enabled only when the clipboard contains valid CSV content.
 4.  The status bar updates live to show the detected delimiter, the number of rows, and the suggested note type. The delimiter dropdown also shows a live auto-detect preview.
-5.  Choose a target **Deck**. You can also type a name in the **"Create Subdeck"** field and click the button to create a new deck inside the one selected above.
+5.  Choose a target **Deck**. You can type in the deck selector to filter the list and find your deck faster. You can also type a name in the **"Create Subdeck"** field and click the button to create a new deck inside the one selected above.
 6.  If the suggested **Note Type** is not correct, you can manually select another one from the dropdown.
 7.  Adjust the **Delimiter** if needed.
 8.  Open **"Advanced"** for header-row handling, deck lock, clipboard override or confirmation. You can also toggle History retention here.
@@ -86,6 +87,11 @@ If you find this add-on useful, please consider supporting its development:
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/D1D01W6NQT)
 
 ## Changelog
+
+### [2026-05-06]
+
+- **Added**: Support for importing `.txt` and `.tsv` files in the file picker.
+- **Added**: Searchable Target Deck selection dropdown using an integrated auto-completer.
 
 ### [2026-03-24]
 
