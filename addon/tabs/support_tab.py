@@ -39,12 +39,12 @@ class SupportTab(QWidget):
         instr.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(instr)
         
-        # Ko-fi Button
-        kofi_btn = QPushButton("Support on Ko-fi")
-        kofi_btn.setCursor(Qt.CursorShape.PointingHandCursor)
-        kofi_btn.clicked.connect(lambda: openLink("https://ko-fi.com/D1D01W6NQT"))
-        kofi_btn.setStyleSheet("background-color: #29abe0; color: white; font-weight: bold; padding: 10px; border-radius: 5px;")
-        layout.addWidget(kofi_btn)
+        # Supporter Opt-out (Moved to top near message)
+        self.supporter_check = QCheckBox("I have supported this addon (Hide automatic update welcome)")
+        self.supporter_check.setToolTip("Checking this will prevent the Support tab from opening automatically after future updates.")
+        self.supporter_check.toggled.connect(self.on_supporter_check_toggled)
+        layout.addWidget(self.supporter_check, 0, Qt.AlignmentFlag.AlignCenter)
+        layout.addSpacing(10)
 
         # Scroll area for QR codes
         scroll = QScrollArea(self)
@@ -117,14 +117,6 @@ class SupportTab(QWidget):
         add_qr("UPI", "athulkrishnasv2015-2@okhdfcbank", "UPI.jpg")
         add_qr("BTC", "bc1qrrek3m7sr33qujjrktj949wav6mehdsk057cfx", "BTC.jpg")
         add_qr("ETH", "0xce6899e4903EcB08bE5Be65E44549fadC3F45D27", "ETH.jpg")
-
-        # Supporter Opt-out
-        layout.addSpacing(20)
-        self.supporter_check = QCheckBox("I have supported this addon (Hide automatic update welcome)")
-        self.supporter_check.setToolTip("Checking this will prevent the Support tab from opening automatically after future updates.")
-        self.supporter_check.toggled.connect(self.on_supporter_check_toggled)
-        layout.addWidget(self.supporter_check, 0, Qt.AlignmentFlag.AlignCenter)
-        layout.addSpacing(10)
 
     def load_supporter_state(self):
         addon_id = mw.addonManager.addonFromModule("addon") # or __name__.split('.')[0]
