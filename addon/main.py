@@ -18,9 +18,9 @@ def show_csv_import_plus_dialog(tab_index=None):
         dialog.raise_()
         return
 
-    # Use a top-level window (no Qt parent) so it does not stay on top of,
-    # minimize with, or force-focus the Anki main window.
-    d = CSVImportPlusDialog()
+    # Use mw as parent so it closes with Anki.
+    # We still keep it non-modal by using .show()
+    d = CSVImportPlusDialog(mw)
     if tab_index is not None:
         d.tabs.setCurrentIndex(tab_index)
 
@@ -45,7 +45,9 @@ def check_for_update_welcome():
     addon_id = mw.addonManager.addonFromModule(__name__)
     if not addon_id:
         return
-    config = mw.addonManager.getConfig(addon_id) or {}
+    
+    # Use meta.json for internal state tracking
+    meta = mw.addonManager.addonMeta(addon_id)
     
     # Get current version from manifest.json
     addon_path = os.path.dirname(__file__)
@@ -57,14 +59,19 @@ def check_for_update_welcome():
     except Exception:
         current_version = "0.0.0"
 
-    last_version = config.get("last_version_seen", "0.0.0")
+    last_version = meta.get("last_version_seen", "0.0.0")
     
     if current_version != last_version:
-        config["last_version_seen"] = current_version
-        # Clean up old flag if it exists
-        config.pop("welcome_shown", None)
-        mw.addonManager.writeConfig(addon_id, config)
+        meta["last_version_seen"] = current_version
+        mw.addonManager.writeAddonMeta(addon_id, meta)
         
+        # Also clean up from config.json if it was there
+        config = mw.addonManager.getConfig(addon_id)
+        if config and ("last_version" in config or "last_version_seen" in config):
+            config.pop("last_version", None)
+            config.pop("last_version_seen", None)
+            mw.addonManager.writeConfig(addon_id, config)
+
         # 3 is the index of the "Support" tab
         # Use a small delay to ensure the main window is ready
         from aqt.qt import QTimer
