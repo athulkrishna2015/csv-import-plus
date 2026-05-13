@@ -113,7 +113,16 @@ class SupportTab(QWidget):
             copy_btn = QPushButton("Copy")
             copy_btn.setFixedWidth(80) # Increased from 60
             copy_btn.setCursor(Qt.CursorShape.PointingHandCursor)
-            copy_btn.clicked.connect(lambda _, a=address: QApplication.clipboard().setText(a))
+            
+            def on_copy(_=None, addr=address, btn=copy_btn):
+                clipboard = QApplication.clipboard()
+                if clipboard:
+                    clipboard.setText(addr)
+                    btn.setText("Copied!")
+                    from aqt.qt import QTimer
+                    QTimer.singleShot(2000, lambda: btn.setText("Copy"))
+            
+            copy_btn.clicked.connect(on_copy)
             
             addr_row.addWidget(addr_label, 1)
             addr_row.addWidget(copy_btn)
