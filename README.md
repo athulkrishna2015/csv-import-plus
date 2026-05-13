@@ -88,13 +88,13 @@ If you find this add-on useful, please consider supporting its development:
 
 ## Changelog
 
-### [2026-05-13]
+### [2.9.0] - 2026-05-13
 
 - **Fixed**: Configuration settings in the "Advanced" tab now persist correctly across Anki restarts.
 - **Fixed**: The addon window now closes automatically when Anki is closed.
 - **Added**: History groups are now collapsed by default for a cleaner interface.
 - **Added**: A "Changelog" link has been added to the Support tab.
-- **Improved**: The Support tab now opens automatically exactly once per addon update.
+- **Improved**: The Support tab now opens automatically exactly once per addon update (tracked via `meta.json`).
 
 ### [2026-05-06]
 
