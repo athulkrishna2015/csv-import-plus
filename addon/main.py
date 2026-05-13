@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+import os
+import json
 from aqt import mw, gui_hooks
 from aqt.utils import openLink
 from aqt.qt import QAction
@@ -7,9 +9,11 @@ from aqt.qt import QAction
 from .dialog import CSVImportPlusDialog
 
 
-def show_csv_import_plus_dialog():
+def show_csv_import_plus_dialog(tab_index=None):
     dialog = getattr(mw, "csv_import_plus_dialog", None)
     if dialog and dialog.isVisible():
+        if tab_index is not None:
+            dialog.tabs.setCurrentIndex(tab_index)
         dialog.activateWindow()
         dialog.raise_()
         return
@@ -17,6 +21,8 @@ def show_csv_import_plus_dialog():
     # Use a top-level window (no Qt parent) so it does not stay on top of,
     # minimize with, or force-focus the Anki main window.
     d = CSVImportPlusDialog()
+    if tab_index is not None:
+        d.tabs.setCurrentIndex(tab_index)
 
     def _clear_dialog_ref(*_):
         if getattr(mw, "csv_import_plus_dialog", None) is d:
@@ -31,12 +37,36 @@ def show_csv_import_plus_dialog():
 
 def setup_menu():
     action = QAction("CSV Import +...", mw)
-    action.triggered.connect(show_csv_import_plus_dialog)
+    action.triggered.connect(lambda: show_csv_import_plus_dialog())
     mw.form.menuTools.addAction(action)
+
+
+def check_for_update():
+    addon_id = mw.addonManager.addonFromModule(__name__)
+    config = mw.addonManager.getConfig(addon_id) or {}
+    
+    # Get current version from manifest.json
+    addon_path = os.path.dirname(__file__)
+    manifest_path = os.path.join(addon_path, "manifest.json")
+    try:
+        with open(manifest_path, "r", encoding="utf-8") as f:
+            manifest = json.load(f)
+            current_version = manifest.get("version", "0.0.0")
+    except Exception:
+        current_version = "0.0.0"
+
+    last_version = config.get("last_version", "0.0.0")
+    
+    if current_version != last_version:
+        config["last_version"] = current_version
+        mw.addonManager.writeConfig(addon_id, config)
+        # 3 is the index of the "Support" tab
+        show_csv_import_plus_dialog(tab_index=3)
 
 
 def init():
     gui_hooks.main_window_did_init.append(setup_menu)
+    gui_hooks.main_window_did_init.append(check_for_update)
     gui_hooks.webview_will_set_content.append(on_webview_will_set_content)
 
 

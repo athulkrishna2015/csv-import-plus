@@ -88,8 +88,11 @@ class CSVImportPlusDialog(QDialog):
                 self.refresh_history()
 
     # -------------------- Config --------------------
+    def _get_config_name(self):
+        return mw.addonManager.addonFromModule(__name__)
+
     def load_config(self):
-        config = mw.addonManager.getConfig(__name__) or {}
+        config = mw.addonManager.getConfig(self._get_config_name()) or {}
 
         if not getattr(mw, 'csv_import_plus_history_loaded', False):
             if config.get("remember_history", False):
@@ -130,7 +133,7 @@ class CSVImportPlusDialog(QDialog):
         self.update_quick_clipboard_button_state()
 
     def save_config(self):
-        config = mw.addonManager.getConfig(__name__) or {}
+        config = mw.addonManager.getConfig(self._get_config_name()) or {}
         config["deck_lock"] = self.deck_lock_check.isChecked()
         config["locked_deck_name"] = self.locked_deck_name
         config[CONFIG_KEY_CONFIRM_CLIPBOARD_QUICK_IMPORT] = self.confirm_clipboard_quick_import
@@ -146,7 +149,7 @@ class CSVImportPlusDialog(QDialog):
             else:
                 config.pop("saved_history", None)
 
-        mw.addonManager.writeConfig(__name__, config)
+        mw.addonManager.writeConfig(self._get_config_name(), config)
 
     def save_history_if_needed(self):
         if hasattr(self, "remember_history_check") and self.remember_history_check.isChecked():
@@ -586,7 +589,7 @@ class CSVImportPlusDialog(QDialog):
                 card_del_btn.clicked.connect(lambda _, bidx=real_idx, cid=c_idx: self.delete_history_card(bidx, cid))
                 self.history_tree.setItemWidget(card_item, 1, card_del_btn)
             
-            batch_item.setExpanded(batch.get("expanded", True))
+            batch_item.setExpanded(batch.get("expanded", False))
             
         self.history_tree.blockSignals(False)
         self.save_history_if_needed()

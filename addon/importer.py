@@ -249,7 +249,7 @@ def do_import(
                 "time": now_str,
                 "deck_name": deck_name,
                 "notetype_name": notetype.get("name", "Unknown"),
-                "expanded": True,
+                "expanded": False,
                 "added": added,
                 "cards": added_cards_previews
             })
