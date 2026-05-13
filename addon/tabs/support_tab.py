@@ -98,19 +98,26 @@ class SupportTab(QWidget):
             qr_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
             vbox.addWidget(qr_label)
 
-            addr_row = QHBoxLayout()
+            addr_row_container = QWidget()
+            addr_row_container.setFixedWidth(400) # Match QR scale width
+            addr_row = QHBoxLayout(addr_row_container)
+            addr_row.setContentsMargins(5, 0, 5, 0)
+            addr_row.setSpacing(5)
+
             addr_label = QLineEdit(address)
             addr_label.setReadOnly(True)
             addr_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
             addr_label.setStyleSheet("background: transparent; border: none;")
+            addr_label.setMinimumWidth(0)
             
             copy_btn = QPushButton("Copy")
             copy_btn.setFixedWidth(60)
+            copy_btn.setCursor(Qt.CursorShape.PointingHandCursor)
             copy_btn.clicked.connect(lambda _, a=address: QApplication.clipboard().setText(a))
             
             addr_row.addWidget(addr_label, 1)
             addr_row.addWidget(copy_btn)
-            vbox.addLayout(addr_row)
+            vbox.addWidget(addr_row_container, 0, Qt.AlignmentFlag.AlignCenter)
 
             self.qr_list.addWidget(container)
 
