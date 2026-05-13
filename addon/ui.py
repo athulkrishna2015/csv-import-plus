@@ -294,9 +294,12 @@ def setup_ui(self):
     support_layout.setContentsMargins(10, 10, 10, 10)
 
     support_instr = QLabel(
-        "If you find this addon useful, consider supporting the development through the following methods:"
+        "If you find this addon useful, consider supporting the development through the following methods:<br><br>"
+        "Check out the <a href='https://github.com/athulkrishna2015/csv-import-plus#changelog'>Changelog</a> for recent updates."
     )
     support_instr.setWordWrap(True)
+    support_instr.setOpenExternalLinks(True)
+    support_instr.setTextFormat(Qt.TextFormat.RichText)
     support_instr.setAlignment(Qt.AlignmentFlag.AlignCenter)
     support_layout.addWidget(support_instr)
     
