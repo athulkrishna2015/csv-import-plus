@@ -65,6 +65,10 @@ def check_for_update_welcome():
         meta["last_version_seen"] = current_version
         mw.addonManager.writeAddonMeta(addon_id, meta)
         
+        # If the user has opted out because they are a supporter, skip the welcome
+        if meta.get("supporter_opt_out", False):
+            return
+
         # Also clean up from config.json if it was there
         config = mw.addonManager.getConfig(addon_id)
         if config and ("last_version" in config or "last_version_seen" in config):

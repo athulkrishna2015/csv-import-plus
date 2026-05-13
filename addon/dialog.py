@@ -53,6 +53,7 @@ class CSVImportPlusDialog(QDialog):
             )
         self.update_quick_clipboard_button_state()
         self.load_config()
+        self.load_supporter_state()
         self.refresh_history()
 
         self.undo_shortcut = QShortcut(QKeySequence("Ctrl+Z"), self)
@@ -177,6 +178,24 @@ class CSVImportPlusDialog(QDialog):
 
     def on_remember_history_toggled(self, checked):
         self.save_config()
+
+    def load_supporter_state(self):
+        addon_id = mw.addonManager.addonFromModule(__name__)
+        if not addon_id:
+            return
+        meta = mw.addonManager.addonMeta(addon_id)
+        if hasattr(self, "supporter_check"):
+            self.supporter_check.blockSignals(True)
+            self.supporter_check.setChecked(meta.get("supporter_opt_out", False))
+            self.supporter_check.blockSignals(False)
+
+    def on_supporter_check_toggled(self, checked):
+        addon_id = mw.addonManager.addonFromModule(__name__)
+        if not addon_id:
+            return
+        meta = mw.addonManager.addonMeta(addon_id)
+        meta["supporter_opt_out"] = checked
+        mw.addonManager.writeAddonMeta(addon_id, meta)
 
     # -------------------- Deck/model helpers --------------------
     def refresh_decks(self, select_name: str | None = None):

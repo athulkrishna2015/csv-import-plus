@@ -383,3 +383,11 @@ def setup_ui(self):
     add_qr("UPI", "athulkrishnasv2015-2@okhdfcbank", "UPI.jpg")
     add_qr("BTC", "bc1qrrek3m7sr33qujjrktj949wav6mehdsk057cfx", "BTC.jpg")
     add_qr("ETH", "0xce6899e4903EcB08bE5Be65E44549fadC3F45D27", "ETH.jpg")
+
+    # Supporter Opt-out
+    support_layout.addSpacing(20)
+    self.supporter_check = QCheckBox("I have supported this addon (Hide automatic update welcome)")
+    self.supporter_check.setToolTip("Checking this will prevent the Support tab from opening automatically after future updates.")
+    self.supporter_check.toggled.connect(self.on_supporter_check_toggled)
+    support_layout.addWidget(self.supporter_check, 0, Qt.AlignmentFlag.AlignCenter)
+    support_layout.addSpacing(10)
