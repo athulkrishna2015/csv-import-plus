@@ -30,14 +30,14 @@ class SupportTab(QWidget):
         layout.setContentsMargins(10, 10, 10, 10)
 
         instr = QLabel(
-            "If you find this addon useful, consider supporting the development through the following methods:<br><br>"
-            "Check out the <a href='https://github.com/athulkrishna2015/csv-import-plus#changelog'>Changelog</a> for recent updates."
+            "If you find this addon useful, consider supporting the development through the following methods:"
         )
         instr.setWordWrap(True)
         instr.setOpenExternalLinks(True)
         instr.setTextFormat(Qt.TextFormat.RichText)
         instr.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(instr)
+
         
         # Supporter Opt-out (Moved to top near message)
         self.supporter_check = QCheckBox("I have supported this addon (Hide automatic update welcome)")
