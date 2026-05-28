@@ -110,7 +110,12 @@ class ImportTab(QWidget):
         self.deck_combo.setCompleter(self.completer)
         
         deck_row.addWidget(self.deck_combo, 1)
-        settings_form.addRow("Target Deck:", deck_container)
+
+        deck_tooltip = "Imported cards will be placed in this deck."
+        deck_label = QLabel("Target Deck:", self)
+        deck_label.setToolTip(deck_tooltip)
+        self.deck_combo.setToolTip(deck_tooltip)
+        settings_form.addRow(deck_label, deck_container)
 
         # Subdeck creation
         subdeck_container = QWidget(self)
@@ -133,7 +138,14 @@ class ImportTab(QWidget):
 
         # Note type combo
         self.notetype_combo = QComboBox(self)
-        settings_form.addRow("Note Type:", self.notetype_combo)
+        notetype_tooltip = (
+            "Newly-imported notes will have this note type, and only existing notes with this note type will be updated.\n\n"
+            "You can choose which fields in the file correspond to which note type fields with the mapping tool."
+        )
+        notetype_label = QLabel("Note Type:", self)
+        notetype_label.setToolTip(notetype_tooltip)
+        self.notetype_combo.setToolTip(notetype_tooltip)
+        settings_form.addRow(notetype_label, self.notetype_combo)
 
         # Delimiter selector
         self.delimiter_combo = QComboBox(self)
@@ -148,7 +160,94 @@ class ImportTab(QWidget):
         )
         self.delimiter_combo.setCurrentIndex(0)
         self.delimiter_combo.currentIndexChanged.connect(self.on_delimiter_changed)
-        settings_form.addRow("Delimiter:", self.delimiter_combo)
+
+        delim_tooltip = (
+            "The character separating fields in the text file. "
+            "You can use the preview to check if the fields are separated correctly.\n\n"
+            "Please note that if this character appears in any field itself, "
+            "the field has to be quoted accordingly to the CSV standard. "
+            "Spreadsheet programs like LibreOffice will do this automatically.\n\n"
+            "It cannot be changed if the text file forces use of a specific separator via a file header. "
+            "If a file header is not present, Anki will try to guess what the separator is."
+        )
+        delim_label = QLabel("Field separator:", self)
+        delim_label.setToolTip(delim_tooltip)
+        self.delimiter_combo.setToolTip(delim_tooltip)
+        settings_form.addRow(delim_label, self.delimiter_combo)
+
+        # Allow HTML in fields
+        self.allow_html_check = QCheckBox("Allow HTML in fields", self)
+        self.allow_html_check.setChecked(True)
+        allow_html_tooltip = (
+            "Enable this if the file contains HTML formatting. "
+            "E.g. if the file contains the string '<br>', it will appear as a line break on your card. "
+            "On the other hand, with this option disabled, the literal characters '<br>' will be rendered."
+        )
+        self.allow_html_check.setToolTip(allow_html_tooltip)
+        allow_html_label = QLabel("HTML Options:", self)
+        allow_html_label.setToolTip(allow_html_tooltip)
+        settings_form.addRow(allow_html_label, self.allow_html_check)
+
+        # Existing notes
+        self.existing_notes_combo = QComboBox(self)
+        self.existing_notes_combo.addItems(
+            [
+                "Update: Update the existing note",
+                "Preserve: Do nothing",
+                "Duplicate: Create a new note",
+            ]
+        )
+        self.existing_notes_combo.setCurrentIndex(2)  # Default: Duplicate
+        existing_tooltip = (
+            "What to do if an imported note matches an existing one.\n\n"
+            "Update: Update the existing note.\n"
+            "Preserve: Do nothing.\n"
+            "Duplicate: Create a new note."
+        )
+        self.existing_notes_combo.setToolTip(existing_tooltip)
+        existing_label = QLabel("Existing notes:", self)
+        existing_label.setToolTip(existing_tooltip)
+        settings_form.addRow(existing_label, self.existing_notes_combo)
+
+        # Match scope
+        self.match_scope_combo = QComboBox(self)
+        self.match_scope_combo.addItems(
+            [
+                "Same note type",
+                "Same note type and deck",
+            ]
+        )
+        self.match_scope_combo.setCurrentIndex(0)
+        match_scope_tooltip = (
+            "Only existing notes with the same note type will be checked for duplicates. "
+            "This can additionally be restricted to notes with cards in the same deck."
+        )
+        self.match_scope_combo.setToolTip(match_scope_tooltip)
+        match_scope_label = QLabel("Match scope:", self)
+        match_scope_label.setToolTip(match_scope_tooltip)
+        settings_form.addRow(match_scope_label, self.match_scope_combo)
+
+        # Tag all notes
+        self.tag_all_edit = QLineEdit(self)
+        self.tag_all_edit.setPlaceholderText("space-separated tags")
+        tag_all_tooltip = (
+            "These tags will be added to both newly-imported and updated notes."
+        )
+        self.tag_all_edit.setToolTip(tag_all_tooltip)
+        tag_all_label = QLabel("Tag all notes:", self)
+        tag_all_label.setToolTip(tag_all_tooltip)
+        settings_form.addRow(tag_all_label, self.tag_all_edit)
+
+        # Tag updated notes
+        self.tag_updated_edit = QLineEdit(self)
+        self.tag_updated_edit.setPlaceholderText("space-separated tags")
+        tag_updated_tooltip = (
+            "These tags will be added to any updated notes."
+        )
+        self.tag_updated_edit.setToolTip(tag_updated_tooltip)
+        tag_updated_label = QLabel("Tag updated notes:", self)
+        tag_updated_label.setToolTip(tag_updated_tooltip)
+        settings_form.addRow(tag_updated_label, self.tag_updated_edit)
 
         layout.addWidget(settings_group)
 

@@ -7,6 +7,8 @@ It is designed to be a faster alternative to the built-in Anki importer for comm
 
 ## Features
 
+- **Full Parity with Official Anki Importer Options**: Access advanced options directly in the main layout including `Allow HTML in fields`, Duplicate Resolution mode (`Update`, `Preserve`, or `Duplicate`), Match Scope (`Same note type` or `Same note type and deck`), and custom tagging fields (`Tag all notes` and `Tag updated notes`).
+- **Complete Hover Descriptions (Tooltips)**: Hover over any label or input setting in the user interface to read complete and detailed tooltips explaining their functionality.
 - **Auto-Detection**: Automatically detects the CSV delimiter (comma, tab, semicolon, etc.) and the most likely note type for your data.
 - **Live Delimiter Preview**: The delimiter dropdown updates live to show the currently detected delimiter while you type or paste.
 - **Paste or Pick File**: Import data by either picking a `.csv`, `.txt`, or `.tsv` file, or pasting CSV text directly into the dialog.
@@ -87,6 +89,12 @@ If you find this add-on useful, please consider supporting its development:
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/D1D01W6NQT)
 
 ## Changelog
+
+### [2.9.1] - 2026-05-28
+
+- **Added**: Full parity with official Anki importer settings (`Allow HTML in fields`, Duplicate Resolution mode (`Update`, `Preserve`, or `Duplicate`), Match Scope, and custom tagging options (`Tag all notes`, `Tag updated notes`)).
+- **Added**: Complete and rich hover tooltips detailing all import configuration options in the GUI.
+- **Added**: New functional test suite with real Anki collection database coverage.
 
 ### [2.9.0] - 2026-05-13
 

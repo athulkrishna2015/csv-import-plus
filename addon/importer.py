@@ -135,6 +135,11 @@ def do_import(
     model_infos,
     header_check,
     delimiter_combo,
+    allow_html=True,
+    existing_notes_index=2,
+    match_scope_index=0,
+    tag_all="",
+    tag_updated="",
 ):
     if not raw_content:
         showWarning("Provide CSV via Paste or choose a CSV file first.")
@@ -187,23 +192,98 @@ def do_import(
 
         mw.col.decks.select(deck_id)
 
+        # Retrieve existing notes for duplicate checking if mode is Update or Preserve
+        existing_notes = {}
+        if existing_notes_index in (0, 1) and mw is not None:
+            if match_scope_index == 1:
+                # Same note type and deck
+                db_rows = mw.col.db.all(
+                    "select distinct n.id, n.flds from notes n "
+                    "join cards c on n.id = c.nid "
+                    "where n.mid = ? and c.did = ?",
+                    model_id, deck_id
+                )
+            else:
+                # Same note type
+                db_rows = mw.col.db.all(
+                    "select id, flds from notes where mid = ?", model_id
+                )
+            
+            for nid, flds in db_rows:
+                first_fld = flds.split("\x1f")[0]
+                existing_notes[first_fld.strip()] = nid
+
         added = 0
+        updated = 0
         skipped_empty = 0
         notes_to_add = []
+        notes_to_update = []
+
+        tags_all_list = [t for t in tag_all.strip().split() if t]
+        tags_updated_list = [t for t in tag_updated.strip().split() if t]
+
         for row in rows:
             if not row or all(not c.strip() for c in row):
                 skipped_empty += 1
                 continue
 
+            # Determine key (first field processed)
+            first_val = row[0].strip() if len(row) > 0 else ""
+            if not allow_html:
+                import html
+                first_val_processed = html.escape(first_val).replace("\r\n", "<br>").replace("\n", "<br>")
+            else:
+                first_val_processed = first_val.replace("\r\n", "<br>").replace("\n", "<br>")
+
+            existing_note_id = existing_notes.get(first_val_processed)
+
+            if existing_note_id is not None:
+                if existing_notes_index == 1:
+                    # Preserve: do nothing, skip this row
+                    continue
+                elif existing_notes_index == 0:
+                    # Update: update existing note
+                    try:
+                        note = mw.col.get_note(existing_note_id)
+                        for i, val in enumerate(row[: len(field_names)]):
+                            val_str = val.strip()
+                            if not allow_html:
+                                import html
+                                val_str = html.escape(val_str)
+                            val_str = val_str.replace("\r\n", "<br>").replace("\n", "<br>")
+                            note.fields[i] = val_str
+
+                        # Add tags
+                        for tag in tags_all_list + tags_updated_list:
+                            if tag not in note.tags:
+                                note.tags.append(tag)
+
+                        notes_to_update.append(note)
+                        continue
+                    except Exception:
+                        pass
+
+            # Duplicate/Create New Note
             note = mw.col.new_note(notetype)
             for i, val in enumerate(row[: len(field_names)]):
-                note.fields[i] = val.strip()
+                val_str = val.strip()
+                if not allow_html:
+                    import html
+                    val_str = html.escape(val_str)
+                val_str = val_str.replace("\r\n", "<br>").replace("\n", "<br>")
+                note.fields[i] = val_str
 
             if len(row) > len(field_names):
                 tags = row[-1].strip()
                 if tags:
-                    note.tags = tags.split()
-                    
+                    for t in tags.split():
+                        if t not in note.tags:
+                            note.tags.append(t)
+
+            for tag in tags_all_list:
+                if tag not in note.tags:
+                    note.tags.append(tag)
+
             notes_to_add.append(note)
 
         mw.progress.start()
@@ -220,6 +300,23 @@ def do_import(
             mw.checkpoint("CSV Import Plus")
 
         added_cards_previews = []
+
+        # Save updated notes
+        for note in notes_to_update:
+            try:
+                if hasattr(mw.col, "update_note"):
+                    mw.col.update_note(note)
+                else:
+                    note.flush()
+                updated += 1
+                if len(note.fields) > 0:
+                    added_cards_previews.append({"id": note.id, "preview": note.fields[0]})
+                else:
+                    added_cards_previews.append({"id": note.id, "preview": "Updated Note"})
+            except Exception:
+                pass
+
+        # Save new notes
         for note in notes_to_add:
             try:
                 mw.col.add_note(note, deck_id)
@@ -241,7 +338,7 @@ def do_import(
         mw.reset()
 
         deck_name = deck_combo.currentText()
-        if added > 0:
+        if (added + updated) > 0:
             if not hasattr(mw, "csv_import_plus_history"):
                 mw.csv_import_plus_history = []
             now_str = datetime.datetime.now().strftime("%I:%M %p")
@@ -251,10 +348,12 @@ def do_import(
                 "notetype_name": notetype.get("name", "Unknown"),
                 "expanded": False,
                 "added": added,
+                "updated": updated,
                 "cards": added_cards_previews
             })
         return {
             "added": added,
+            "updated": updated,
             "skipped_empty": skipped_empty,
             "deck_name": deck_name,
             "used_auto_delimiter": delimiter_combo.currentIndex() == 0,

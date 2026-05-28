@@ -111,6 +111,34 @@ class CSVImportPlusDialog(QDialog):
         self.advanced_tab_widget.load_config(config)
         self.locked_deck_name = config.get("locked_deck_name")
 
+        # Load new importer settings
+        self.allow_html_check.blockSignals(True)
+        self.allow_html_check.setChecked(config.get("allow_html", True))
+        self.allow_html_check.blockSignals(False)
+
+        self.existing_notes_combo.blockSignals(True)
+        self.existing_notes_combo.setCurrentIndex(config.get("existing_notes_index", 2))
+        self.existing_notes_combo.blockSignals(False)
+
+        self.match_scope_combo.blockSignals(True)
+        self.match_scope_combo.setCurrentIndex(config.get("match_scope_index", 0))
+        self.match_scope_combo.blockSignals(False)
+
+        self.tag_all_edit.blockSignals(True)
+        self.tag_all_edit.setText(config.get("tag_all", ""))
+        self.tag_all_edit.blockSignals(False)
+
+        self.tag_updated_edit.blockSignals(True)
+        self.tag_updated_edit.setText(config.get("tag_updated", ""))
+        self.tag_updated_edit.blockSignals(False)
+
+        # Connect signals for auto-save
+        self.allow_html_check.stateChanged.connect(lambda _: self.save_config())
+        self.existing_notes_combo.currentIndexChanged.connect(lambda _: self.save_config())
+        self.match_scope_combo.currentIndexChanged.connect(lambda _: self.save_config())
+        self.tag_all_edit.textChanged.connect(lambda _: self.save_config())
+        self.tag_updated_edit.textChanged.connect(lambda _: self.save_config())
+
         self.update_quick_clipboard_button_state()
 
     def save_config(self):
@@ -121,6 +149,13 @@ class CSVImportPlusDialog(QDialog):
         config[CONFIG_KEY_CONFIRM_CLIPBOARD_QUICK_IMPORT] = self.confirm_clipboard_quick_import
         config[CONFIG_KEY_ALLOW_ANY_CLIPBOARD_QUICK_IMPORT] = self.allow_any_clipboard_quick_import
         
+        # Save new importer settings
+        config["allow_html"] = self.allow_html_check.isChecked()
+        config["existing_notes_index"] = self.existing_notes_combo.currentIndex()
+        config["match_scope_index"] = self.match_scope_combo.currentIndex()
+        config["tag_all"] = self.tag_all_edit.text()
+        config["tag_updated"] = self.tag_updated_edit.text()
+
         if self.remember_history_check.isChecked():
             config["saved_history"] = getattr(mw, "csv_import_plus_history", [])
         else:
@@ -404,6 +439,7 @@ class CSVImportPlusDialog(QDialog):
         return confirmed
 
     def _run_import(self, raw: str, clear_pasted_input: bool):
+        self.save_config()
         result = importer.do_import(
             raw,
             self.deck_combo,
@@ -412,6 +448,11 @@ class CSVImportPlusDialog(QDialog):
             self.model_infos,
             self.header_check,
             self.delimiter_combo,
+            allow_html=self.allow_html_check.isChecked(),
+            existing_notes_index=self.existing_notes_combo.currentIndex(),
+            match_scope_index=self.match_scope_combo.currentIndex(),
+            tag_all=self.tag_all_edit.text(),
+            tag_updated=self.tag_updated_edit.text(),
         )
         if result:
             self.history_tab_widget.refresh_history()

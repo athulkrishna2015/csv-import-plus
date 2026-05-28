@@ -43,6 +43,12 @@ def setup_ui(self):
     self.delimiter_combo = self.import_tab_widget.delimiter_combo
     self.quick_clipboard_btn = self.import_tab_widget.quick_clipboard_btn
     
+    self.allow_html_check = self.import_tab_widget.allow_html_check
+    self.existing_notes_combo = self.import_tab_widget.existing_notes_combo
+    self.match_scope_combo = self.import_tab_widget.match_scope_combo
+    self.tag_all_edit = self.import_tab_widget.tag_all_edit
+    self.tag_updated_edit = self.import_tab_widget.tag_updated_edit
+    
     self.history_tree = self.history_tab_widget.history_tree
     self.browse_history_btn = self.history_tab_widget.browse_history_btn
     self.delete_selected_history_btn = self.history_tab_widget.delete_selected_history_btn
