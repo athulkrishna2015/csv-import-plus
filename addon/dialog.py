@@ -46,6 +46,10 @@ class CSVImportPlusDialog(QDialog):
         self._analysis_timer.setSingleShot(True)
         self._analysis_timer.timeout.connect(self.on_content_changed)
         self.setup_ui()
+        self.refresh_decks()
+        self.model_infos = self.get_model_infos()
+        self.notetype_combo.clear()
+        self.notetype_combo.addItems([m.name for m in self.model_infos])
         self._clipboard = QApplication.clipboard()
         if self._clipboard is not None:
             self._clipboard.dataChanged.connect(
