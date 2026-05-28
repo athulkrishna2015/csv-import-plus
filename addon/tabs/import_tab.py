@@ -14,6 +14,7 @@ from aqt.qt import (
     QLineEdit,
     QPushButton,
     QPlainTextEdit,
+    QScrollArea,
     QVBoxLayout,
     QWidget,
     Qt,
@@ -26,7 +27,21 @@ class ImportTab(QWidget):
         self.setup_ui()
 
     def setup_ui(self):
-        layout = QVBoxLayout(self)
+        # Base layout on the ImportTab widget itself
+        main_layout = QVBoxLayout(self)
+        main_layout.setContentsMargins(10, 10, 10, 10)
+        main_layout.setSpacing(10)
+
+        # Scroll Area to hold all settings & editor
+        scroll = QScrollArea(self)
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QScrollArea.Shape.NoFrame)
+
+        # Container widget for scroll area
+        container = QWidget(scroll)
+        layout = QVBoxLayout(container)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(10)
 
         instr = QLabel(
             "Paste CSV or choose a CSV file, adjust options, pick deck and note type, then import.<br>"
@@ -252,7 +267,11 @@ class ImportTab(QWidget):
 
         layout.addWidget(settings_group)
 
-        # Footer buttons
+        # Set container to scroll and add scroll to main layout
+        scroll.setWidget(container)
+        main_layout.addWidget(scroll, 1)
+
+        # Footer buttons (pinned outside of the scroll area!)
         btns = QHBoxLayout()
         self.quick_btn = QPushButton("Quick Import", self)
         self.quick_btn.clicked.connect(self.on_do_import)
@@ -271,7 +290,7 @@ class ImportTab(QWidget):
         btns.addWidget(self.quick_btn)
         btns.addWidget(self.anki_btn)
         btns.addWidget(self.cancel_btn)
-        layout.addLayout(btns)
+        main_layout.addLayout(btns)
 
     def on_pick_file(self):
         if hasattr(self.dialog, "pick_file"):
