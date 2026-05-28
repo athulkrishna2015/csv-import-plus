@@ -90,7 +90,7 @@ If you find this add-on useful, please consider supporting its development:
 
 ## Changelog
 
-### [2.9.1] - 2026-05-28
+### [3.0.0] - 2026-05-28
 
 - **Added**: Full parity with official Anki importer settings (`Allow HTML in fields`, Duplicate Resolution mode (`Update`, `Preserve`, or `Duplicate`), Match Scope, and custom tagging options (`Tag all notes`, `Tag updated notes`)).
 - **Added**: Complete and rich hover tooltips detailing all import configuration options in the GUI.
