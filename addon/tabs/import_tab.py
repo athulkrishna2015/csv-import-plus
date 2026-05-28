@@ -4,6 +4,7 @@ import os
 from aqt import mw
 from aqt.qt import (
     QApplication,
+    QCheckBox,
     QComboBox,
     QCompleter,
     QFormLayout,
