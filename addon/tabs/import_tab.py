@@ -56,39 +56,39 @@ class ImportTab(QWidget):
         layout.addWidget(instr)
 
         # File picker row
-        file_row_w = QWidget(self)
+        file_row_w = QWidget()
         file_row = QHBoxLayout(file_row_w)
         file_row.setContentsMargins(0, 0, 0, 0)
 
-        self.file_edit = QLineEdit(self)
+        self.file_edit = QLineEdit()
         self.file_edit.setReadOnly(True)
         self.file_edit.setPlaceholderText("No file selected…")
 
-        self.browse_btn = QPushButton("Browse…", self)
+        self.browse_btn = QPushButton("Browse…")
         self.browse_btn.clicked.connect(self.on_pick_file)
 
-        file_row.addWidget(QLabel("CSV file:", self))
+        file_row.addWidget(QLabel("CSV file:"))
         file_row.addWidget(self.file_edit, 1)
         file_row.addWidget(self.browse_btn, 0)
         layout.addWidget(file_row_w)
 
         # Paste area
-        content_header = QWidget(self)
+        content_header = QWidget()
         content_header_row = QHBoxLayout(content_header)
         content_header_row.setContentsMargins(0, 0, 0, 0)
-        content_header_row.addWidget(QLabel("CSV content:", self))
+        content_header_row.addWidget(QLabel("CSV content:"))
         content_header_row.addStretch()
 
-        self.paste_clipboard_btn = QPushButton("Paste Clipboard", self)
+        self.paste_clipboard_btn = QPushButton("Paste Clipboard")
         self.paste_clipboard_btn.clicked.connect(self.on_paste_clipboard)
         content_header_row.addWidget(self.paste_clipboard_btn, 0)
 
-        self.quick_clipboard_btn = QPushButton("Quick Import Clipboard", self)
+        self.quick_clipboard_btn = QPushButton("Quick Import Clipboard")
         self.quick_clipboard_btn.clicked.connect(self.on_quick_import_clipboard)
         content_header_row.addWidget(self.quick_clipboard_btn, 0)
 
         layout.addWidget(content_header)
-        self.csv_text = QPlainTextEdit(self)
+        self.csv_text = QPlainTextEdit()
         self.csv_text.setPlaceholderText(
             "Paste CSV here...\n\n"
             "#notetype:Basic\n"
@@ -108,14 +108,14 @@ class ImportTab(QWidget):
         layout.addWidget(self.status_label)
 
         # Settings
-        settings_group = QGroupBox("Import Settings", self)
+        settings_group = QGroupBox("Import Settings")
         settings_form = QFormLayout(settings_group)
 
         # Deck combo
-        deck_container = QWidget(self)
+        deck_container = QWidget()
         deck_row = QHBoxLayout(deck_container)
         deck_row.setContentsMargins(0, 0, 0, 0)
-        self.deck_combo = QComboBox(self)
+        self.deck_combo = QComboBox()
         self.deck_combo.setEditable(True)
         self.deck_combo.setInsertPolicy(QComboBox.InsertPolicy.NoInsert)
         
@@ -128,20 +128,20 @@ class ImportTab(QWidget):
         deck_row.addWidget(self.deck_combo, 1)
 
         deck_tooltip = "Imported cards will be placed in this deck."
-        deck_label = QLabel("Target Deck:", self)
+        deck_label = QLabel("Target Deck:")
         deck_label.setToolTip(deck_tooltip)
         self.deck_combo.setToolTip(deck_tooltip)
         settings_form.addRow(deck_label, deck_container)
 
         # Subdeck creation
-        subdeck_container = QWidget(self)
+        subdeck_container = QWidget()
         subdeck_row = QHBoxLayout(subdeck_container)
         subdeck_row.setContentsMargins(0, 0, 0, 0)
 
-        self.subdeck_edit = QLineEdit(self)
+        self.subdeck_edit = QLineEdit()
         self.subdeck_edit.setPlaceholderText("New subdeck name")
 
-        self.create_subdeck_btn = QPushButton("Create subdeck", self)
+        self.create_subdeck_btn = QPushButton("Create subdeck")
         self.create_subdeck_btn.clicked.connect(self.on_create_subdeck)
 
         subdeck_row.addWidget(self.subdeck_edit, 1)
@@ -153,18 +153,18 @@ class ImportTab(QWidget):
         settings_form.addRow("Add Subdeck:", subdeck_container)
 
         # Note type combo
-        self.notetype_combo = QComboBox(self)
+        self.notetype_combo = QComboBox()
         notetype_tooltip = (
             "Newly-imported notes will have this note type, and only existing notes with this note type will be updated.\n\n"
             "You can choose which fields in the file correspond to which note type fields with the mapping tool."
         )
-        notetype_label = QLabel("Note Type:", self)
+        notetype_label = QLabel("Note Type:")
         notetype_label.setToolTip(notetype_tooltip)
         self.notetype_combo.setToolTip(notetype_tooltip)
         settings_form.addRow(notetype_label, self.notetype_combo)
 
         # Delimiter selector
-        self.delimiter_combo = QComboBox(self)
+        self.delimiter_combo = QComboBox()
         self.delimiter_combo.addItems(
             [
                 "Auto-detect",
@@ -186,13 +186,13 @@ class ImportTab(QWidget):
             "It cannot be changed if the text file forces use of a specific separator via a file header. "
             "If a file header is not present, Anki will try to guess what the separator is."
         )
-        delim_label = QLabel("Field separator:", self)
+        delim_label = QLabel("Field separator:")
         delim_label.setToolTip(delim_tooltip)
         self.delimiter_combo.setToolTip(delim_tooltip)
         settings_form.addRow(delim_label, self.delimiter_combo)
 
         # Allow HTML in fields
-        self.allow_html_check = QCheckBox("Allow HTML in fields", self)
+        self.allow_html_check = QCheckBox("Allow HTML in fields")
         self.allow_html_check.setChecked(True)
         allow_html_tooltip = (
             "Enable this if the file contains HTML formatting. "
@@ -200,12 +200,12 @@ class ImportTab(QWidget):
             "On the other hand, with this option disabled, the literal characters '<br>' will be rendered."
         )
         self.allow_html_check.setToolTip(allow_html_tooltip)
-        allow_html_label = QLabel("HTML Options:", self)
+        allow_html_label = QLabel("HTML Options:")
         allow_html_label.setToolTip(allow_html_tooltip)
         settings_form.addRow(allow_html_label, self.allow_html_check)
 
         # Existing notes
-        self.existing_notes_combo = QComboBox(self)
+        self.existing_notes_combo = QComboBox()
         self.existing_notes_combo.addItems(
             [
                 "Update: Update the existing note",
@@ -221,12 +221,12 @@ class ImportTab(QWidget):
             "Duplicate: Create a new note."
         )
         self.existing_notes_combo.setToolTip(existing_tooltip)
-        existing_label = QLabel("Existing notes:", self)
+        existing_label = QLabel("Existing notes:")
         existing_label.setToolTip(existing_tooltip)
         settings_form.addRow(existing_label, self.existing_notes_combo)
 
         # Match scope
-        self.match_scope_combo = QComboBox(self)
+        self.match_scope_combo = QComboBox()
         self.match_scope_combo.addItems(
             [
                 "Same note type",
@@ -239,29 +239,29 @@ class ImportTab(QWidget):
             "This can additionally be restricted to notes with cards in the same deck."
         )
         self.match_scope_combo.setToolTip(match_scope_tooltip)
-        match_scope_label = QLabel("Match scope:", self)
+        match_scope_label = QLabel("Match scope:")
         match_scope_label.setToolTip(match_scope_tooltip)
         settings_form.addRow(match_scope_label, self.match_scope_combo)
 
         # Tag all notes
-        self.tag_all_edit = QLineEdit(self)
+        self.tag_all_edit = QLineEdit()
         self.tag_all_edit.setPlaceholderText("space-separated tags")
         tag_all_tooltip = (
             "These tags will be added to both newly-imported and updated notes."
         )
         self.tag_all_edit.setToolTip(tag_all_tooltip)
-        tag_all_label = QLabel("Tag all notes:", self)
+        tag_all_label = QLabel("Tag all notes:")
         tag_all_label.setToolTip(tag_all_tooltip)
         settings_form.addRow(tag_all_label, self.tag_all_edit)
 
         # Tag updated notes
-        self.tag_updated_edit = QLineEdit(self)
+        self.tag_updated_edit = QLineEdit()
         self.tag_updated_edit.setPlaceholderText("space-separated tags")
         tag_updated_tooltip = (
             "These tags will be added to any updated notes."
         )
         self.tag_updated_edit.setToolTip(tag_updated_tooltip)
-        tag_updated_label = QLabel("Tag updated notes:", self)
+        tag_updated_label = QLabel("Tag updated notes:")
         tag_updated_label.setToolTip(tag_updated_tooltip)
         settings_form.addRow(tag_updated_label, self.tag_updated_edit)
 
@@ -273,17 +273,17 @@ class ImportTab(QWidget):
 
         # Footer buttons (pinned outside of the scroll area!)
         btns = QHBoxLayout()
-        self.quick_btn = QPushButton("Quick Import", self)
+        self.quick_btn = QPushButton("Quick Import")
         self.quick_btn.clicked.connect(self.on_do_import)
         self.quick_btn.setDefault(True)
 
-        self.anki_btn = QPushButton("Import with Anki Dialog", self)
+        self.anki_btn = QPushButton("Import with Anki Dialog")
         self.anki_btn.setToolTip(
             "Open Anki's import dialog for advanced field mapping and options."
         )
         self.anki_btn.clicked.connect(self.on_open_with_anki)
 
-        self.cancel_btn = QPushButton("Close", self)
+        self.cancel_btn = QPushButton("Close")
         self.cancel_btn.clicked.connect(self.dialog.reject)
 
         btns.addStretch()
