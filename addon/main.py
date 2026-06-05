@@ -1,28 +1,86 @@
-# -*- coding: utf-8 -*-
-
 import os
 import json
+import csv
+import io
 from aqt import mw, gui_hooks
 from aqt.utils import openLink
-from aqt.qt import QAction
+from aqt.qt import (
+    QAction,
+    QObject,
+    QEvent,
+    QApplication,
+    Qt,
+)
 
 from .dialog import CSVImportPlusDialog
 
 
-def show_csv_import_plus_dialog(tab_index=None):
+def is_valid_csv_text(text: str) -> bool:
+    text = text.strip()
+    if not text:
+        return False
+    if text.startswith("#notetype:"):
+        return True
+    lines = [line for line in text.splitlines() if line.strip()]
+    if not lines:
+        return False
+    
+    # Try delimiters
+    for delim in (',', '\t', ';', '|'):
+        try:
+            reader = csv.reader(io.StringIO(text), delimiter=delim)
+            rows = [r for r in reader if r]
+            if rows and any(len(r) > 1 for r in rows):
+                return True
+        except Exception:
+            continue
+    return False
+
+
+class OverviewDragDropFilter(QObject):
+    def eventFilter(self, obj, event):
+        if getattr(mw, "state", None) != "overview":
+            return super().eventFilter(obj, event)
+
+        if event.type() == QEvent.Type.DragEnter:
+            if event.mimeData().hasUrls():
+                for url in event.mimeData().urls():
+                    path = url.toLocalFile()
+                    if path.lower().endswith(('.csv', '.txt', '.tsv')):
+                        event.acceptProposedAction()
+                        return True
+        elif event.type() == QEvent.Type.Drop:
+            if event.mimeData().hasUrls():
+                urls = event.mimeData().urls()
+                if urls:
+                    file_path = urls[0].toLocalFile()
+                    if file_path.lower().endswith(('.csv', '.txt', '.tsv')):
+                        show_csv_import_plus_dialog(file_path=file_path)
+                        event.acceptProposedAction()
+                        return True
+        return super().eventFilter(obj, event)
+
+
+def show_csv_import_plus_dialog(tab_index=None, file_path=None, pasted_text=None):
     dialog = getattr(mw, "csv_import_plus_dialog", None)
     if dialog and dialog.isVisible():
         if tab_index is not None:
             dialog.tabs.setCurrentIndex(tab_index)
+        if file_path:
+            dialog.load_file_from_path(file_path)
+        elif pasted_text:
+            dialog.load_text_content(pasted_text)
         dialog.activateWindow()
         dialog.raise_()
         return
 
-    # Use mw as parent so it closes with Anki.
-    # We still keep it non-modal by using .show()
     d = CSVImportPlusDialog(mw)
     if tab_index is not None:
         d.tabs.setCurrentIndex(tab_index)
+    if file_path:
+        d.load_file_from_path(file_path)
+    elif pasted_text:
+        d.load_text_content(pasted_text)
 
     def _clear_dialog_ref(*_):
         if getattr(mw, "csv_import_plus_dialog", None) is d:
@@ -82,9 +140,20 @@ def check_for_update_welcome():
         QTimer.singleShot(1000, lambda: show_csv_import_plus_dialog(tab_index=3))
 
 
+_drag_drop_filter = None
+
+
+def setup_drag_drop_filter():
+    global _drag_drop_filter
+    if getattr(mw, "web", None) is not None:
+        _drag_drop_filter = OverviewDragDropFilter(mw.web)
+        mw.web.installEventFilter(_drag_drop_filter)
+
+
 def init():
     gui_hooks.main_window_did_init.append(setup_menu)
     gui_hooks.main_window_did_init.append(check_for_update_welcome)
+    gui_hooks.main_window_did_init.append(setup_drag_drop_filter)
     gui_hooks.webview_will_set_content.append(on_webview_will_set_content)
 
 

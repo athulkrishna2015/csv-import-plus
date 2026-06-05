@@ -209,6 +209,48 @@ class CSVImportPlusDialog(QDialog):
         return anki_helpers.get_model_infos()
 
     # -------------------- Source content --------------------
+    def select_active_deck(self):
+        # Determine current active deck (if any) and select it in the deck combo.
+        # Check if we are in deck overview state and select that deck.
+        if getattr(mw, "state", None) == "overview":
+            try:
+                current_deck = mw.col.decks.current()
+                if current_deck:
+                    deck_name = current_deck.get("name")
+                    if deck_name:
+                        idx = self.deck_combo.findText(deck_name)
+                        if idx >= 0:
+                            self.deck_combo.setCurrentIndex(idx)
+            except Exception:
+                pass
+
+    def load_file_from_path(self, path: str):
+        self.file_path = path
+        self.file_edit.setText(path)
+        try:
+            mw.pm.profile[PROFILE_KEY_LAST_DIR] = os.path.dirname(path)
+        except Exception:
+            pass
+
+        # Clear any pasted CSV text to use the file instead
+        self.csv_text.clear()
+
+        # Prefill subdeck name from filename
+        base = os.path.splitext(os.path.basename(path))[0]
+        self.subdeck_edit.setText(base)
+
+        self.select_active_deck()
+        self.on_content_changed()
+
+    def load_text_content(self, text: str):
+        # Clear selected file
+        self.file_path = ""
+        self.file_edit.clear()
+
+        self.csv_text.setPlainText(text)
+        self.select_active_deck()
+        self.on_content_changed()
+
     def pick_file(self):
         start_dir = mw.pm.profile.get(PROFILE_KEY_LAST_DIR, "")
         path, _ = QFileDialog.getOpenFileName(

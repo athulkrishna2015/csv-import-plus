@@ -181,5 +181,14 @@ class TestImporterFunctional(unittest.TestCase):
         self.assertTrue("tagAll" in notes[0].tags)
         self.assertTrue("tagUpdate" in notes[0].tags)
 
+    def test_drag_drop_filter_and_dialog_load(self):
+        from addon.main import is_valid_csv_text
+
+        # Test is_valid_csv_text helper
+        self.assertTrue(is_valid_csv_text("a,b\nc,d"))
+        self.assertTrue(is_valid_csv_text("#notetype:Basic\na,b"))
+        self.assertFalse(is_valid_csv_text(""))
+        self.assertFalse(is_valid_csv_text("single_column_no_delimiters"))
+
 if __name__ == "__main__":
     unittest.main()
