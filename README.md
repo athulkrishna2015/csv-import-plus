@@ -90,6 +90,11 @@ If you find this add-on useful, please consider supporting its development:
 
 ## Changelog
 
+### [3.1.0] - 2026-06-05
+
+- **Added**: Drag and drop support on Anki's Deck Overview screen. Dragging a `.csv`, `.txt`, or `.tsv` file onto the deck overview page automatically opens the importer with that file loaded and the active deck selected.
+- **Improved**: Updated `make_ankiaddon.py` to respect `.gitignore` rules dynamically when packaging the addon.
+
 ### [3.0.0] - 2026-05-28
 
 - **Added**: Full parity with official Anki importer settings (`Allow HTML in fields`, Duplicate Resolution mode (`Update`, `Preserve`, or `Duplicate`), Match Scope, and custom tagging options (`Tag all notes`, `Tag updated notes`)).
