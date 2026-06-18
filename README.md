@@ -90,6 +90,11 @@ If you find this add-on useful, please consider supporting its development:
 
 ## Changelog
 
+### [3.2.0] - 2026-06-18
+
+- **Added**: Full integration of bulk file importing directly into the main GUI. Multiple files can be chosen via file browser or dragged and dropped to enter an inline bulk table showing status and parsing metadata.
+- **Added**: Ability to append files dynamically and remove selected files from the bulk import queue directly in the GUI.
+
 ### [3.1.0] - 2026-06-05
 
 - **Added**: Drag and drop support on Anki's Deck Overview screen. Dragging a `.csv`, `.txt`, or `.tsv` file onto the deck overview page automatically opens the importer with that file loaded and the active deck selected.

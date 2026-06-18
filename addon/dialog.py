@@ -20,6 +20,17 @@ from aqt.qt import (
     QVBoxLayout,
     QTreeWidgetItem,
     QPushButton,
+    QHBoxLayout,
+    QTableWidget,
+    QTableWidgetItem,
+    QHeaderView,
+    QComboBox,
+    QLineEdit,
+    QFormLayout,
+    QGroupBox,
+    QProgressBar,
+    QCompleter,
+    QWidget,
 )
 
 from . import anki_helpers
@@ -39,6 +50,7 @@ class CSVImportPlusDialog(QDialog):
         self.model_infos = []
         # State
         self.file_path = ""
+        self.file_paths = []
         self.locked_deck_name = None
         self.confirm_clipboard_quick_import = False
         self.allow_any_clipboard_quick_import = False
@@ -67,10 +79,43 @@ class CSVImportPlusDialog(QDialog):
         
         self.redo_shortcut_shift = QShortcut(QKeySequence("Ctrl+Shift+Z"), self)
         self.redo_shortcut_shift.activated.connect(self.on_anki_redo)
+        self.setAcceptDrops(True)
 
     def closeEvent(self, event):
         self.deleteLater()
         event.accept()
+
+    def dragEnterEvent(self, event):
+        if event.mimeData().hasUrls():
+            for url in event.mimeData().urls():
+                path = url.toLocalFile()
+                if path.lower().endswith(('.csv', '.txt', '.tsv')):
+                    event.acceptProposedAction()
+                    return
+        super().dragEnterEvent(event)
+
+    def dropEvent(self, event):
+        if event.mimeData().hasUrls():
+            urls = event.mimeData().urls()
+            valid_paths = []
+            for url in urls:
+                path = url.toLocalFile()
+                if path.lower().endswith(('.csv', '.txt', '.tsv')):
+                    valid_paths.append(path)
+            if valid_paths:
+                if self.file_paths:
+                    self.add_file_paths(valid_paths)
+                elif self.file_path:
+                    all_paths = [self.file_path]
+                    for p in valid_paths:
+                        if p not in all_paths:
+                            all_paths.append(p)
+                    self.load_files(all_paths)
+                else:
+                    self.load_files(valid_paths)
+                event.acceptProposedAction()
+                return
+        super().dropEvent(event)
 
     # -------------------- UI --------------------
     setup_ui = ui.setup_ui
@@ -226,11 +271,23 @@ class CSVImportPlusDialog(QDialog):
 
     def load_file_from_path(self, path: str):
         self.file_path = path
+        self.file_paths = []
         self.file_edit.setText(path)
         try:
             mw.pm.profile[PROFILE_KEY_LAST_DIR] = os.path.dirname(path)
         except Exception:
             pass
+
+        # Ensure UI shows single-file/editor view
+        self.import_tab_widget.content_stack.setCurrentIndex(0)
+        self.import_tab_widget.paste_clipboard_btn.setEnabled(True)
+        self.import_tab_widget.quick_clipboard_btn.setEnabled(self.clipboard_can_quick_import())
+        self.import_tab_widget.content_header_label.setText("CSV content:")
+        self.import_tab_widget.remove_btn.setVisible(False)
+        self.import_tab_widget.paste_clipboard_btn.setVisible(True)
+        self.import_tab_widget.quick_clipboard_btn.setVisible(True)
+        self.import_tab_widget.quick_btn.setText("Quick Import")
+        self.import_tab_widget.anki_btn.setVisible(True)
 
         # Clear any pasted CSV text to use the file instead
         self.csv_text.clear()
@@ -242,10 +299,134 @@ class CSVImportPlusDialog(QDialog):
         self.select_active_deck()
         self.on_content_changed()
 
+    def load_files(self, paths):
+        if not paths:
+            return
+        
+        if len(paths) == 1:
+            self.load_file_from_path(paths[0])
+        else:
+            self.file_path = ""
+            self.file_paths = list(paths)
+            self.file_edit.setText(f"{len(paths)} files selected")
+            self.import_tab_widget.content_stack.setCurrentIndex(1)
+            self.import_tab_widget.paste_clipboard_btn.setEnabled(False)
+            self.import_tab_widget.quick_clipboard_btn.setEnabled(False)
+            self.import_tab_widget.content_header_label.setText("Files to import:")
+            self.import_tab_widget.remove_btn.setVisible(True)
+            self.import_tab_widget.paste_clipboard_btn.setVisible(False)
+            self.import_tab_widget.quick_clipboard_btn.setVisible(False)
+            self.import_tab_widget.quick_btn.setText("Quick Import All")
+            self.import_tab_widget.anki_btn.setVisible(False)
+            
+            # Clear pasted text in editor
+            self.csv_text.clear()
+            
+            # Populate bulk table
+            self.populate_bulk_table()
+
+    def populate_bulk_table(self):
+        self.import_tab_widget.bulk_table.setRowCount(0)
+        self.import_tab_widget.bulk_table.setRowCount(len(self.file_paths))
+        
+        self.bulk_file_details = []
+        
+        for row_idx, path in enumerate(self.file_paths):
+            filename = os.path.basename(path)
+            
+            # Read file content
+            content = ""
+            for enc in ("utf-8", "utf-8-sig"):
+                try:
+                    with open(path, "r", encoding=enc, newline="") as f:
+                        content = f.read()
+                        break
+                except Exception:
+                    continue
+            if not content:
+                try:
+                    with open(path, "r", errors="ignore") as f:
+                        content = f.read()
+                except Exception:
+                    pass
+            
+            # Detect formatting
+            delimiter = ","
+            rows_count = 0
+            if content:
+                try:
+                    delimiter, rows_count = detector.detect_csv_format(content)
+                except Exception:
+                    pass
+            
+            delim_name = detector.get_delimiter_name(delimiter)
+            
+            # Auto-pick model/note type
+            model_name = "None"
+            model_idx = None
+            
+            # Check for directive
+            directives = detector.extract_directives(content)
+            directive_nt_name = directives.get("notetype")
+            if directive_nt_name:
+                idx = detector.find_model_index_by_name(self.model_infos, directive_nt_name)
+                if idx is not None:
+                    model_idx = idx
+                    model_name = f"{self.model_infos[idx].name} (via directive)"
+            
+            if model_idx is None and content:
+                best_name, best_fields, best_idx = detector.auto_pick_note_type(
+                    content, delimiter, self.model_infos, self.header_check
+                )
+                if best_idx is not None:
+                    model_name = best_name
+                    model_idx = best_idx
+            
+            self.bulk_file_details.append({
+                "path": path,
+                "content": content,
+                "delimiter": delimiter,
+                "model_idx": model_idx,
+                "rows_count": rows_count
+            })
+            
+            # Create Table Items
+            item_name = QTableWidgetItem(filename)
+            item_name.setToolTip(path)
+            item_name.setFlags(item_name.flags() & ~Qt.ItemFlag.ItemIsEditable)
+            
+            item_delim = QTableWidgetItem(delim_name)
+            item_delim.setFlags(item_delim.flags() & ~Qt.ItemFlag.ItemIsEditable)
+            
+            item_model = QTableWidgetItem(model_name)
+            item_model.setFlags(item_model.flags() & ~Qt.ItemFlag.ItemIsEditable)
+            
+            item_rows = QTableWidgetItem(str(rows_count))
+            item_rows.setFlags(item_rows.flags() & ~Qt.ItemFlag.ItemIsEditable)
+            
+            item_status = QTableWidgetItem("Ready")
+            item_status.setFlags(item_status.flags() & ~Qt.ItemFlag.ItemIsEditable)
+            
+            self.import_tab_widget.bulk_table.setItem(row_idx, 0, item_name)
+            self.import_tab_widget.bulk_table.setItem(row_idx, 1, item_delim)
+            self.import_tab_widget.bulk_table.setItem(row_idx, 2, item_model)
+            self.import_tab_widget.bulk_table.setItem(row_idx, 3, item_rows)
+            self.import_tab_widget.bulk_table.setItem(row_idx, 4, item_status)
+
     def load_text_content(self, text: str):
         # Clear selected file
         self.file_path = ""
+        self.file_paths = []
         self.file_edit.clear()
+        self.import_tab_widget.content_stack.setCurrentIndex(0)
+        self.import_tab_widget.paste_clipboard_btn.setEnabled(True)
+        self.import_tab_widget.quick_clipboard_btn.setEnabled(self.clipboard_can_quick_import())
+        self.import_tab_widget.content_header_label.setText("CSV content:")
+        self.import_tab_widget.remove_btn.setVisible(False)
+        self.import_tab_widget.paste_clipboard_btn.setVisible(True)
+        self.import_tab_widget.quick_clipboard_btn.setVisible(True)
+        self.import_tab_widget.quick_btn.setText("Quick Import")
+        self.import_tab_widget.anki_btn.setVisible(True)
 
         self.csv_text.setPlainText(text)
         self.select_active_deck()
@@ -253,23 +434,18 @@ class CSVImportPlusDialog(QDialog):
 
     def pick_file(self):
         start_dir = mw.pm.profile.get(PROFILE_KEY_LAST_DIR, "")
-        path, _ = QFileDialog.getOpenFileName(
-            mw, "Select CSV to Import", start_dir, "Text/CSV Files (*.csv *.txt *.tsv);;All Files (*)"
+        paths, _ = QFileDialog.getOpenFileNames(
+            mw, "Select CSV Files to Import", start_dir, "Text/CSV Files (*.csv *.txt *.tsv);;All Files (*)"
         )
-        if not path:
+        if not paths:
             return
-        self.file_path = path
-        self.file_edit.setText(path)
+            
         try:
-            mw.pm.profile[PROFILE_KEY_LAST_DIR] = os.path.dirname(path)
+            mw.pm.profile[PROFILE_KEY_LAST_DIR] = os.path.dirname(paths[0])
         except Exception:
             pass
 
-        # Prefill subdeck name from filename
-        base = os.path.splitext(os.path.basename(path))[0]
-        self.subdeck_edit.setText(base)
-
-        self.on_content_changed()
+        self.load_files(paths)
 
     def read_file_text(self) -> str:
         if not self.file_path:
@@ -523,6 +699,9 @@ class CSVImportPlusDialog(QDialog):
     # -------------------- Status updates --------------------
     def on_content_changed(self):
         self.update_quick_clipboard_button_state()
+        if self.file_paths:
+            self.populate_bulk_table()
+            return
         raw = self.get_active_raw()
         if not raw:
             try:
@@ -604,11 +783,154 @@ class CSVImportPlusDialog(QDialog):
 
         self.status_label.setText(" • ".join(parts))
 
-    # -------------------- Import paths --------------------
     def open_with_default_importer(self):
         raw = self.get_active_raw()
         importer.open_with_default_importer(raw, self.deck_combo, self.deck_infos)
 
     def do_import(self):
-        raw = self.get_active_raw()
-        self._run_import(raw, clear_pasted_input=True)
+        if self.file_paths:
+            self.run_bulk_import()
+        else:
+            raw = self.get_active_raw()
+            self._run_import(raw, clear_pasted_input=True)
+
+    def remove_selected_files(self):
+        selected_ranges = self.import_tab_widget.bulk_table.selectedRanges()
+        if not selected_ranges:
+            return
+        
+        indices_to_remove = set()
+        for r in selected_ranges:
+            for i in range(r.topRow(), r.bottomRow() + 1):
+                indices_to_remove.add(i)
+                
+        for i in sorted(indices_to_remove, reverse=True):
+            if 0 <= i < len(self.file_paths):
+                self.file_paths.pop(i)
+                
+        if not self.file_paths:
+            # Revert to single file/editor mode
+            self.load_text_content("")
+        else:
+            self.load_files(self.file_paths)
+
+    def add_file_paths(self, paths):
+        for p in paths:
+            if p not in self.file_paths:
+                self.file_paths.append(p)
+        self.load_files(self.file_paths)
+
+    def run_bulk_import(self):
+        if not self.file_paths:
+            return
+
+        deck_idx = self.deck_combo.currentIndex()
+        if deck_idx < 0:
+            deck_idx = self.deck_combo.findText(self.deck_combo.currentText())
+        
+        existing_notes_index = self.existing_notes_combo.currentIndex()
+        match_scope_index = self.match_scope_combo.currentIndex()
+        allow_html = self.allow_html_check.isChecked()
+        header_checked = self.header_check.isChecked()
+        tag_all = self.tag_all_edit.text()
+        tag_updated = self.tag_updated_edit.text()
+        
+        self.save_config()
+
+        # Disable main UI buttons during import
+        self.import_tab_widget.quick_btn.setEnabled(False)
+        self.import_tab_widget.remove_btn.setEnabled(False)
+        self.import_tab_widget.cancel_btn.setEnabled(False)
+        self.import_tab_widget.browse_btn.setEnabled(False)
+        self.progress_bar.setVisible(True)
+        self.progress_bar.setRange(0, len(self.file_paths))
+        self.progress_bar.setValue(0)
+
+        total_added = 0
+        total_updated = 0
+        total_skipped = 0
+        success_count = 0
+        
+        for idx, details in enumerate(self.bulk_file_details):
+            path = details["path"]
+            content = details["content"]
+            delimiter = details["delimiter"]
+            model_idx = details["model_idx"]
+            
+            if model_idx is None:
+                self.import_tab_widget.bulk_table.setItem(idx, 4, QTableWidgetItem("Failed: No note type selected/picked"))
+                continue
+                
+            self.import_tab_widget.bulk_table.setItem(idx, 4, QTableWidgetItem("Importing..."))
+            QApplication.processEvents()
+            
+            dummy_deck_combo = DummyWidget(_index=deck_idx, _text=self.deck_combo.currentText())
+            dummy_notetype_combo = DummyWidget(_index=model_idx)
+            dummy_delimiter_combo = DummyWidget(_index=0, _text="Auto-detect")
+            dummy_header_check = DummyWidget(_checked=header_checked)
+            
+            try:
+                res = importer.do_import(
+                    content,
+                    dummy_deck_combo,
+                    self.deck_infos,
+                    dummy_notetype_combo,
+                    self.model_infos,
+                    dummy_header_check,
+                    dummy_delimiter_combo,
+                    allow_html=allow_html,
+                    existing_notes_index=existing_notes_index,
+                    match_scope_index=match_scope_index,
+                    tag_all=tag_all,
+                    tag_updated=tag_updated,
+                )
+                if res:
+                    total_added += res["added"]
+                    total_updated += res["updated"]
+                    total_skipped += res["skipped_empty"]
+                    success_count += 1
+                    status_text = f"✓ Added: {res['added']}, Updated: {res['updated']}"
+                    self.import_tab_widget.bulk_table.setItem(idx, 4, QTableWidgetItem(status_text))
+                else:
+                    self.import_tab_widget.bulk_table.setItem(idx, 4, QTableWidgetItem("⚠ Failed"))
+            except Exception as e:
+                self.import_tab_widget.bulk_table.setItem(idx, 4, QTableWidgetItem(f"⚠ Error: {str(e)}"))
+            
+            self.progress_bar.setValue(idx + 1)
+            QApplication.processEvents()
+
+        summary = f"Imported {success_count}/{len(self.file_paths)} files. Added {total_added} notes, updated {total_updated}."
+        self.status_label.setText(summary)
+        
+        # Re-enable main UI buttons
+        self.import_tab_widget.quick_btn.setEnabled(True)
+        self.import_tab_widget.remove_btn.setEnabled(True)
+        self.import_tab_widget.cancel_btn.setEnabled(True)
+        self.import_tab_widget.browse_btn.setEnabled(True)
+        self.progress_bar.setVisible(False)
+        
+        # Refresh history tab if it exists
+        try:
+            self.history_tab_widget.refresh_history()
+        except Exception:
+            pass
+
+
+class DummyWidget:
+    def __init__(self, **kwargs):
+        self.__dict__.update(kwargs)
+    
+    def currentIndex(self):
+        return getattr(self, "_index", 0)
+    
+    def currentText(self):
+        return getattr(self, "_text", "")
+    
+    def findText(self, text):
+        return getattr(self, "_index", 0)
+        
+    def setCurrentIndex(self, index):
+        self._index = index
+        
+    def isChecked(self):
+        return getattr(self, "_checked", False)

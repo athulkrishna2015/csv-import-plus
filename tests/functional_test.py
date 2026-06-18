@@ -41,12 +41,39 @@ class TestImporterFunctional(unittest.TestCase):
 
         # Mock mw
         import aqt
+        from aqt.qt import QApplication
+        app = QApplication.instance()
+        if not app:
+            app = QApplication(sys.argv)
         aqt.mw = types.SimpleNamespace()
         aqt.mw.col = self.col
         aqt.mw.progress = types.SimpleNamespace(start=lambda: None, finish=lambda: None)
         aqt.mw.reset = lambda: None
         aqt.mw.checkpoint = lambda *args, **kwargs: None
-        importer.mw = aqt.mw
+        aqt.mw.app = app
+        aqt.mw.mediaServer = types.SimpleNamespace(set_page_html=lambda *args, **kwargs: None)
+        aqt.mw.serverURL = lambda: "http://localhost/"
+
+        # Import modules and bind their mw references to our mock mw
+        import addon.dialog as dialog_mod
+        import addon.detector as detector_mod
+        import addon.anki_helpers as anki_helpers_mod
+        import addon.importer as importer_mod
+        import addon.tabs.import_tab as import_tab_mod
+        import addon.tabs.history_tab as history_tab_mod
+        import addon.tabs.advanced_tab as advanced_tab_mod
+        import addon.tabs.support_tab as support_tab_mod
+        import addon.main as main_mod
+
+        dialog_mod.mw = aqt.mw
+        detector_mod.mw = aqt.mw
+        anki_helpers_mod.mw = aqt.mw
+        importer_mod.mw = aqt.mw
+        import_tab_mod.mw = aqt.mw
+        history_tab_mod.mw = aqt.mw
+        advanced_tab_mod.mw = aqt.mw
+        support_tab_mod.mw = aqt.mw
+        main_mod.mw = aqt.mw
 
         # Get default deck and model
         self.deck_id = self.col.decks.id("Default")
@@ -189,6 +216,66 @@ class TestImporterFunctional(unittest.TestCase):
         self.assertTrue(is_valid_csv_text("#notetype:Basic\na,b"))
         self.assertFalse(is_valid_csv_text(""))
         self.assertFalse(is_valid_csv_text("single_column_no_delimiters"))
+
+    def test_bulk_import_dialog(self):
+        # Create some temp CSV files
+        file1 = os.path.join(self.temp_dir, "test1.csv")
+        with open(file1, "w", encoding="utf-8") as f:
+            f.write("Front,Back\nFront1,Back1\nFront2,Back2")
+
+        file2 = os.path.join(self.temp_dir, "test2.csv")
+        with open(file2, "w", encoding="utf-8") as f:
+            f.write("#notetype:Basic\nFront,Back\nFront3,Back3\nFront4,Back4")
+
+        # Mock mw configuration and properties
+        import aqt
+        aqt.mw.addonManager = types.SimpleNamespace(
+            getConfig=lambda *args: {},
+            writeConfig=lambda *args: None,
+            addonFromModule=lambda *args: "csv_import_plus_dev",
+            addonMeta=lambda *args: {},
+        )
+        import addon.dialog as dialog_mod
+        import addon.detector as detector_mod
+        import addon.anki_helpers as anki_helpers_mod
+        import addon.importer as importer_mod
+        dialog_mod.mw = aqt.mw
+        detector_mod.mw = aqt.mw
+        anki_helpers_mod.mw = aqt.mw
+        importer_mod.mw = aqt.mw
+
+        from addon.dialog import CSVImportPlusDialog
+        
+        # Instantiate Main Dialog
+        dialog = CSVImportPlusDialog(None)
+        dialog.header_check.setChecked(True)
+        
+        # Load multiple files to enter bulk mode
+        dialog.load_files([file1, file2])
+        self.assertEqual(len(dialog.file_paths), 2)
+        
+        # Verify bulk table row count and items
+        self.assertEqual(dialog.import_tab_widget.bulk_table.rowCount(), 2)
+        self.assertEqual(dialog.import_tab_widget.bulk_table.item(0, 0).text(), "test1.csv")
+        self.assertEqual(dialog.import_tab_widget.bulk_table.item(1, 0).text(), "test2.csv")
+
+        # Run bulk import
+        dialog.do_import()
+
+        # Verify notes in database
+        notes = [self.col.get_note(nid) for nid in self.col.find_notes("")]
+        self.assertEqual(len(notes), 4)
+        
+        # Test add/remove paths
+        dialog.add_file_paths([file1])  # Duplicate, should not add
+        self.assertEqual(len(dialog.file_paths), 2)
+        
+        file3 = os.path.join(self.temp_dir, "test3.csv")
+        dialog.add_file_paths([file3])
+        self.assertEqual(len(dialog.file_paths), 3)
+
+        # Cleanup dialog
+        dialog.accept()
 
 if __name__ == "__main__":
     unittest.main()

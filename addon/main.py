@@ -52,12 +52,18 @@ class OverviewDragDropFilter(QObject):
         elif event.type() == QEvent.Type.Drop:
             if event.mimeData().hasUrls():
                 urls = event.mimeData().urls()
-                if urls:
-                    file_path = urls[0].toLocalFile()
-                    if file_path.lower().endswith(('.csv', '.txt', '.tsv')):
-                        show_csv_import_plus_dialog(file_path=file_path)
-                        event.acceptProposedAction()
-                        return True
+                valid_paths = []
+                for url in urls:
+                    path = url.toLocalFile()
+                    if path.lower().endswith(('.csv', '.txt', '.tsv')):
+                        valid_paths.append(path)
+                if valid_paths:
+                    if len(valid_paths) == 1:
+                        show_csv_import_plus_dialog(file_path=valid_paths[0])
+                    else:
+                        show_csv_import_plus_bulk_dialog(file_paths=valid_paths)
+                    event.acceptProposedAction()
+                    return True
         return super().eventFilter(obj, event)
 
 
@@ -91,6 +97,30 @@ def show_csv_import_plus_dialog(tab_index=None, file_path=None, pasted_text=None
     d.raise_()
     d.activateWindow()
     mw.csv_import_plus_dialog = d
+
+
+def show_csv_import_plus_bulk_dialog(file_paths):
+    dialog = getattr(mw, "csv_import_plus_dialog", None)
+    if dialog and dialog.isVisible():
+        if dialog.file_paths:
+            dialog.add_file_paths(file_paths)
+        else:
+            all_paths = []
+            if dialog.file_path:
+                all_paths.append(dialog.file_path)
+            for p in file_paths:
+                if p not in all_paths:
+                    all_paths.append(p)
+            dialog.load_files(all_paths)
+        dialog.activateWindow()
+        dialog.raise_()
+        return
+
+    # Dialog not open, create it and load bulk files
+    show_csv_import_plus_dialog()
+    dialog = getattr(mw, "csv_import_plus_dialog", None)
+    if dialog:
+        dialog.load_files(file_paths)
 
 
 def setup_menu():
@@ -148,6 +178,8 @@ def setup_drag_drop_filter():
     if getattr(mw, "web", None) is not None:
         _drag_drop_filter = OverviewDragDropFilter(mw.web)
         mw.web.installEventFilter(_drag_drop_filter)
+        if hasattr(mw.web, "focusProxy") and mw.web.focusProxy():
+            mw.web.focusProxy().installEventFilter(_drag_drop_filter)
 
 
 def init():
@@ -171,3 +203,8 @@ def on_webview_will_set_content(web_content, webview):
     if webview in [mw.web, getattr(mw.reviewer, "web", None)]:
         if KOFI_SCRIPT not in web_content.head:
             web_content.head += KOFI_SCRIPT
+        
+        global _drag_drop_filter
+        if webview == mw.web and _drag_drop_filter is not None:
+            if hasattr(mw.web, "focusProxy") and mw.web.focusProxy():
+                mw.web.focusProxy().installEventFilter(_drag_drop_filter)

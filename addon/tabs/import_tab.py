@@ -18,6 +18,10 @@ from aqt.qt import (
     QVBoxLayout,
     QWidget,
     Qt,
+    QStackedWidget,
+    QTableWidget,
+    QHeaderView,
+    QProgressBar,
 )
 
 class ImportTab(QWidget):
@@ -76,8 +80,14 @@ class ImportTab(QWidget):
         content_header = QWidget()
         content_header_row = QHBoxLayout(content_header)
         content_header_row.setContentsMargins(0, 0, 0, 0)
-        content_header_row.addWidget(QLabel("CSV content:"))
+        self.content_header_label = QLabel("CSV content:")
+        content_header_row.addWidget(self.content_header_label)
         content_header_row.addStretch()
+
+        self.remove_btn = QPushButton("Remove Selected")
+        self.remove_btn.clicked.connect(self.on_remove_selected)
+        self.remove_btn.setVisible(False)
+        content_header_row.addWidget(self.remove_btn, 0)
 
         self.paste_clipboard_btn = QPushButton("Paste Clipboard")
         self.paste_clipboard_btn.clicked.connect(self.on_paste_clipboard)
@@ -88,6 +98,9 @@ class ImportTab(QWidget):
         content_header_row.addWidget(self.quick_clipboard_btn, 0)
 
         layout.addWidget(content_header)
+        
+        self.content_stack = QStackedWidget(self)
+        
         self.csv_text = QPlainTextEdit()
         self.csv_text.setPlaceholderText(
             "Paste CSV here...\n\n"
@@ -100,7 +113,28 @@ class ImportTab(QWidget):
             "{{c1::Humans}} landed on the moon in {{c1::1969}}.,,space"
         )
         self.csv_text.textChanged.connect(self.on_csv_text_changed)
-        layout.addWidget(self.csv_text, 1)
+        self.content_stack.addWidget(self.csv_text)
+        
+        self.bulk_table = QTableWidget()
+        self.bulk_table.setColumnCount(5)
+        self.bulk_table.setHorizontalHeaderLabels([
+            "File Name", "Delimiter", "Note Type (Auto-picked)", "Rows", "Status"
+        ])
+        self.bulk_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
+        self.bulk_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.ResizeToContents)
+        self.bulk_table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.ResizeToContents)
+        self.bulk_table.horizontalHeader().setSectionResizeMode(3, QHeaderView.ResizeMode.ResizeToContents)
+        self.bulk_table.horizontalHeader().setSectionResizeMode(4, QHeaderView.ResizeMode.Stretch)
+        self.bulk_table.setAlternatingRowColors(True)
+        self.bulk_table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
+        self.content_stack.addWidget(self.bulk_table)
+        
+        layout.addWidget(self.content_stack, 1)
+
+        # Progress bar
+        self.progress_bar = QProgressBar()
+        self.progress_bar.setVisible(False)
+        layout.addWidget(self.progress_bar)
 
         # Status
         self.status_label = QLabel("")
@@ -323,3 +357,7 @@ class ImportTab(QWidget):
     def on_open_with_anki(self):
         if hasattr(self.dialog, "open_with_default_importer"):
             self.dialog.open_with_default_importer()
+
+    def on_remove_selected(self):
+        if hasattr(self.dialog, "remove_selected_files"):
+            self.dialog.remove_selected_files()

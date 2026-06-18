@@ -42,6 +42,8 @@ def setup_ui(self):
     self.notetype_combo = self.import_tab_widget.notetype_combo
     self.delimiter_combo = self.import_tab_widget.delimiter_combo
     self.quick_clipboard_btn = self.import_tab_widget.quick_clipboard_btn
+    self.remove_btn = self.import_tab_widget.remove_btn
+    self.progress_bar = self.import_tab_widget.progress_bar
     
     self.allow_html_check = self.import_tab_widget.allow_html_check
     self.existing_notes_combo = self.import_tab_widget.existing_notes_combo
