@@ -140,18 +140,11 @@ def do_import(
     match_scope_index=0,
     tag_all="",
     tag_updated="",
+    field_mapping=None,
 ):
     if not raw_content:
         showWarning("Provide CSV via Paste or choose a CSV file first.")
         return
-
-    # Re-apply #notetype directive at import time
-    directives = detector.extract_directives(raw_content)
-    nt_name = directives.get("notetype")
-    if nt_name:
-        idx = detector.find_model_index_by_name(model_infos, nt_name)
-        if idx is not None:
-            notetype_combo.setCurrentIndex(idx)
 
     csv_content = detector.strip_directive_lines(raw_content)
 
@@ -228,7 +221,13 @@ def do_import(
                 continue
 
             # Determine key (first field processed)
-            first_val = row[0].strip() if len(row) > 0 else ""
+            first_field_col_idx = 0
+            if field_mapping and len(field_names) > 0:
+                mapped_idx = field_mapping.get(field_names[0])
+                if mapped_idx is not None:
+                    first_field_col_idx = mapped_idx
+
+            first_val = row[first_field_col_idx].strip() if len(row) > first_field_col_idx else ""
             if not allow_html:
                 import html
                 first_val_processed = html.escape(first_val).replace("\r\n", "<br>").replace("\n", "<br>")
@@ -245,13 +244,24 @@ def do_import(
                     # Update: update existing note
                     try:
                         note = mw.col.get_note(existing_note_id)
-                        for i, val in enumerate(row[: len(field_names)]):
-                            val_str = val.strip()
-                            if not allow_html:
-                                import html
-                                val_str = html.escape(val_str)
-                            val_str = val_str.replace("\r\n", "<br>").replace("\n", "<br>")
-                            note.fields[i] = val_str
+                        if field_mapping:
+                            for f_idx, f_name in enumerate(field_names):
+                                col_idx = field_mapping.get(f_name)
+                                if col_idx is not None and col_idx < len(row):
+                                    val_str = row[col_idx].strip()
+                                    if not allow_html:
+                                        import html
+                                        val_str = html.escape(val_str)
+                                    val_str = val_str.replace("\r\n", "<br>").replace("\n", "<br>")
+                                    note.fields[f_idx] = val_str
+                        else:
+                            for i, val in enumerate(row[: len(field_names)]):
+                                val_str = val.strip()
+                                if not allow_html:
+                                    import html
+                                    val_str = html.escape(val_str)
+                                val_str = val_str.replace("\r\n", "<br>").replace("\n", "<br>")
+                                note.fields[i] = val_str
 
                         # Add tags
                         for tag in tags_all_list + tags_updated_list:
@@ -265,20 +275,40 @@ def do_import(
 
             # Duplicate/Create New Note
             note = mw.col.new_note(notetype)
-            for i, val in enumerate(row[: len(field_names)]):
-                val_str = val.strip()
-                if not allow_html:
-                    import html
-                    val_str = html.escape(val_str)
-                val_str = val_str.replace("\r\n", "<br>").replace("\n", "<br>")
-                note.fields[i] = val_str
+            if field_mapping:
+                for f_idx, f_name in enumerate(field_names):
+                    col_idx = field_mapping.get(f_name)
+                    if col_idx is not None and col_idx < len(row):
+                        val_str = row[col_idx].strip()
+                        if not allow_html:
+                            import html
+                            val_str = html.escape(val_str)
+                        val_str = val_str.replace("\r\n", "<br>").replace("\n", "<br>")
+                        note.fields[f_idx] = val_str
+            else:
+                for i, val in enumerate(row[: len(field_names)]):
+                    val_str = val.strip()
+                    if not allow_html:
+                        import html
+                        val_str = html.escape(val_str)
+                    val_str = val_str.replace("\r\n", "<br>").replace("\n", "<br>")
+                    note.fields[i] = val_str
 
-            if len(row) > len(field_names):
-                tags = row[-1].strip()
-                if tags:
-                    for t in tags.split():
-                        if t not in note.tags:
-                            note.tags.append(t)
+            if field_mapping:
+                tags_col_idx = field_mapping.get("Tags")
+                if tags_col_idx is not None and tags_col_idx < len(row):
+                    tags_val = row[tags_col_idx].strip()
+                    if tags_val:
+                        for t in tags_val.split():
+                            if t not in note.tags:
+                                note.tags.append(t)
+            else:
+                if len(row) > len(field_names):
+                    tags = row[-1].strip()
+                    if tags:
+                        for t in tags.split():
+                            if t not in note.tags:
+                                note.tags.append(t)
 
             for tag in tags_all_list:
                 if tag not in note.tags:

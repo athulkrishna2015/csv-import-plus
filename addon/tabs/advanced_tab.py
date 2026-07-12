@@ -68,6 +68,28 @@ class AdvancedTab(QWidget):
         self.clipboard_confirm_toggle.toggled.connect(self.on_clipboard_confirm_toggled)
         form.addRow("", self.clipboard_confirm_toggle)
 
+        self.disable_notetype_auto_detect_check = QCheckBox(
+            "Disable Note Type Auto-Detection", self
+        )
+        self.disable_notetype_auto_detect_check.setToolTip(
+            "Prevent the addon from automatically changing the Note Type dropdown when CSV content is loaded."
+        )
+        self.disable_notetype_auto_detect_check.toggled.connect(
+            lambda _: self.dialog.save_config() if hasattr(self.dialog, "save_config") else None
+        )
+        form.addRow("", self.disable_notetype_auto_detect_check)
+
+        self.disable_delimiter_auto_detect_check = QCheckBox(
+            "Disable Delimiter Auto-Detection", self
+        )
+        self.disable_delimiter_auto_detect_check.setToolTip(
+            "Prevent the addon from automatically guessing the CSV column separator when content is loaded."
+        )
+        self.disable_delimiter_auto_detect_check.toggled.connect(
+            lambda _: self.dialog.save_config() if hasattr(self.dialog, "save_config") else None
+        )
+        form.addRow("", self.disable_delimiter_auto_detect_check)
+
         layout.addStretch()
 
     def load_config(self, config):
@@ -95,12 +117,26 @@ class AdvancedTab(QWidget):
         )
         self.clipboard_confirm_toggle.blockSignals(False)
 
+        self.disable_notetype_auto_detect_check.blockSignals(True)
+        self.disable_notetype_auto_detect_check.setChecked(
+            config.get("disable_notetype_auto_detect", False)
+        )
+        self.disable_notetype_auto_detect_check.blockSignals(False)
+
+        self.disable_delimiter_auto_detect_check.blockSignals(True)
+        self.disable_delimiter_auto_detect_check.setChecked(
+            config.get("disable_delimiter_auto_detect", False)
+        )
+        self.disable_delimiter_auto_detect_check.blockSignals(False)
+
     def save_config(self, config):
         config["deck_lock"] = self.deck_lock_check.isChecked()
         config["first_row_header"] = self.header_check.isChecked()
         config["remember_history"] = self.remember_history_check.isChecked()
         config[CONFIG_KEY_ALLOW_ANY_CLIPBOARD_QUICK_IMPORT] = self.allow_any_clipboard_toggle.isChecked()
         config[CONFIG_KEY_CONFIRM_CLIPBOARD_QUICK_IMPORT] = self.clipboard_confirm_toggle.isChecked()
+        config["disable_notetype_auto_detect"] = self.disable_notetype_auto_detect_check.isChecked()
+        config["disable_delimiter_auto_detect"] = self.disable_delimiter_auto_detect_check.isChecked()
 
     def on_deck_lock_toggled(self, checked):
         if hasattr(self.dialog, "on_deck_lock_toggled"):

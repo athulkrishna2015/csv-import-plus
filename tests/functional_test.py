@@ -117,6 +117,50 @@ class TestImporterFunctional(unittest.TestCase):
         self.assertEqual(notes[0].fields[0], "Front1")
         self.assertEqual(notes[0].tags, ["tagA"])
 
+    def test_functional_import_field_mapping(self):
+        deck_combo = _DummyCombo("Default", 0)
+        notetype_combo = _DummyCombo("Basic", 0)
+        delimiter_combo = _DummyCombo("Comma (,)", 1)
+        header_check = types.SimpleNamespace(isChecked=lambda: False)
+
+        deck_infos = [types.SimpleNamespace(name="Default", id=self.deck_id)]
+        model_infos = [types.SimpleNamespace(name="Basic", id=self.model_id)]
+
+        raw_csv = "ValA,ValB,tagX\nValC,ValD,tagY"
+        
+        # Mapping: Front maps to col 1 (ValB), Back maps to col 0 (ValA), Tags maps to col 2 (tagX)
+        field_mapping = {
+            "Front": 1,
+            "Back": 0,
+            "Tags": 2
+        }
+
+        res = importer.do_import(
+            raw_csv,
+            deck_combo,
+            deck_infos,
+            notetype_combo,
+            model_infos,
+            header_check,
+            delimiter_combo,
+            allow_html=True,
+            existing_notes_index=2, # Duplicate
+            field_mapping=field_mapping
+        )
+        self.assertEqual(res["added"], 2)
+
+        # Verify notes in database have correct mapping and tags
+        notes = [self.col.get_note(nid) for nid in self.col.find_notes("")]
+        self.assertEqual(len(notes), 2)
+        # Note 0
+        self.assertEqual(notes[0].fields[0], "ValB") # Front
+        self.assertEqual(notes[0].fields[1], "ValA") # Back
+        self.assertEqual(notes[0].tags, ["tagX"])
+        # Note 1
+        self.assertEqual(notes[1].fields[0], "ValD") # Front
+        self.assertEqual(notes[1].fields[1], "ValC") # Back
+        self.assertEqual(notes[1].tags, ["tagY"])
+
     def test_functional_import_html_escaping(self):
         deck_combo = _DummyCombo("Default", 0)
         notetype_combo = _DummyCombo("Basic", 0)
@@ -207,6 +251,34 @@ class TestImporterFunctional(unittest.TestCase):
         self.assertEqual(notes[0].fields[1], "NewBack")
         self.assertTrue("tagAll" in notes[0].tags)
         self.assertTrue("tagUpdate" in notes[0].tags)
+
+    def test_disable_auto_detection(self):
+        import aqt
+        aqt.mw.addonManager = types.SimpleNamespace(
+            getConfig=lambda *args: {"disable_notetype_auto_detect": True, "disable_delimiter_auto_detect": True},
+            writeConfig=lambda *args: None,
+            addonFromModule=lambda *args: "csv_import_plus_dev",
+            addonMeta=lambda *args: {},
+        )
+        import addon.dialog as dialog_mod
+        dialog_mod.mw = aqt.mw
+        
+        from addon.dialog import CSVImportPlusDialog
+        dialog = CSVImportPlusDialog(None)
+        
+        # Manually set combos to distinct values
+        dialog.notetype_combo.setCurrentIndex(0)
+        dialog.delimiter_combo.setCurrentIndex(1) # Comma (,)
+        
+        # Load CSV text with directives that would normally auto-detect/force something else
+        csv_text = "#notetype:Cloze\nFront\tBack"
+        dialog.csv_text.setPlainText(csv_text)
+        
+        # The auto-detections should be skipped
+        self.assertEqual(dialog.notetype_combo.currentIndex(), 0)
+        self.assertEqual(dialog.delimiter_combo.currentIndex(), 1)
+        
+        dialog.accept()
 
     def test_drag_drop_filter_and_dialog_load(self):
         from addon.main import is_valid_csv_text

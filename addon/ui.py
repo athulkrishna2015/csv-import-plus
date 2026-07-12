@@ -44,6 +44,8 @@ def setup_ui(self):
     self.quick_clipboard_btn = self.import_tab_widget.quick_clipboard_btn
     self.remove_btn = self.import_tab_widget.remove_btn
     self.progress_bar = self.import_tab_widget.progress_bar
+    self.field_mapping_group = self.import_tab_widget.field_mapping_group
+    self.field_mapping_layout = self.import_tab_widget.field_mapping_layout
     
     self.allow_html_check = self.import_tab_widget.allow_html_check
     self.existing_notes_combo = self.import_tab_widget.existing_notes_combo
@@ -60,5 +62,7 @@ def setup_ui(self):
     self.remember_history_check = self.advanced_tab_widget.remember_history_check
     self.allow_any_clipboard_toggle = self.advanced_tab_widget.allow_any_clipboard_toggle
     self.clipboard_confirm_toggle = self.advanced_tab_widget.clipboard_confirm_toggle
+    self.disable_notetype_auto_detect_check = self.advanced_tab_widget.disable_notetype_auto_detect_check
+    self.disable_delimiter_auto_detect_check = self.advanced_tab_widget.disable_delimiter_auto_detect_check
 
     self.supporter_check = self.support_tab_widget.supporter_check

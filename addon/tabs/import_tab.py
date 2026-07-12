@@ -301,6 +301,11 @@ class ImportTab(QWidget):
 
         layout.addWidget(settings_group)
 
+        # Field Mapping
+        self.field_mapping_group = QGroupBox("Field Mapping")
+        self.field_mapping_layout = QFormLayout(self.field_mapping_group)
+        layout.addWidget(self.field_mapping_group)
+
         # Set container to scroll and add scroll to main layout
         scroll.setWidget(container)
         main_layout.addWidget(scroll, 1)

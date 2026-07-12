@@ -62,6 +62,8 @@ class CSVImportPlusDialog(QDialog):
         self.model_infos = self.get_model_infos()
         self.notetype_combo.clear()
         self.notetype_combo.addItems([m.name for m in self.model_infos])
+        self.notetype_combo.currentIndexChanged.connect(self.update_field_mapping_ui)
+        self.update_field_mapping_ui()
         self._clipboard = QApplication.clipboard()
         if self._clipboard is not None:
             self._clipboard.dataChanged.connect(
@@ -662,6 +664,11 @@ class CSVImportPlusDialog(QDialog):
 
     def _run_import(self, raw: str, clear_pasted_input: bool):
         self.save_config()
+        field_mapping = {}
+        if hasattr(self, "mapping_dropdowns"):
+            for name, combo in self.mapping_dropdowns.items():
+                val = combo.itemData(combo.currentIndex())
+                field_mapping[name] = val
         result = importer.do_import(
             raw,
             self.deck_combo,
@@ -675,6 +682,7 @@ class CSVImportPlusDialog(QDialog):
             match_scope_index=self.match_scope_combo.currentIndex(),
             tag_all=self.tag_all_edit.text(),
             tag_updated=self.tag_updated_edit.text(),
+            field_mapping=field_mapping,
         )
         if result:
             self.history_tab_widget.refresh_history()
@@ -701,6 +709,7 @@ class CSVImportPlusDialog(QDialog):
         self.update_quick_clipboard_button_state()
         if self.file_paths:
             self.populate_bulk_table()
+            self.update_field_mapping_ui()
             return
         raw = self.get_active_raw()
         if not raw:
@@ -711,39 +720,56 @@ class CSVImportPlusDialog(QDialog):
             self.status_label.setText("")
             return
 
+        # Determine if auto-detect options are disabled
+        disable_delim_detect = self.disable_delimiter_auto_detect_check.isChecked()
+        disable_nt_detect = self.disable_notetype_auto_detect_check.isChecked()
+
+        if disable_delim_detect:
+            if self.delimiter_combo.currentIndex() == 0:
+                self.delimiter_combo.blockSignals(True)
+                self.delimiter_combo.setCurrentIndex(1)  # Comma (,)
+                self.delimiter_combo.blockSignals(False)
+
         directives = detector.extract_directives(raw)
         content = detector.strip_directive_lines(raw)
 
         # Apply #notetype directive if present
         forced_model_info = None
-        nt_name = directives.get("notetype")
-        if nt_name:
-            idx = detector.find_model_index_by_name(self.model_infos, nt_name)
-            if idx is not None:
-                try:
-                    self.notetype_combo.setCurrentIndex(idx)
-                    forced_model_info = (
-                        self.model_infos[idx].name,
-                        len(mw.col.models.get(self.model_infos[idx].id)["flds"]),
-                    )
-                except Exception:
-                    pass
+        if not disable_nt_detect:
+            nt_name = directives.get("notetype")
+            if nt_name:
+                idx = detector.find_model_index_by_name(self.model_infos, nt_name)
+                if idx is not None:
+                    try:
+                        self.notetype_combo.setCurrentIndex(idx)
+                        forced_model_info = (
+                            self.model_infos[idx].name,
+                            len(mw.col.models.get(self.model_infos[idx].id)["flds"]),
+                        )
+                    except Exception:
+                        pass
 
         # Live delimiter detection preview (updates even in manual mode).
         detected_delimiter = None
         detected_rows = 0
-        try:
-            detected_delimiter, detected_rows = detector.detect_csv_format(content)
-            detected_name = detector.get_delimiter_name(detected_delimiter)
-            self.delimiter_combo.setItemText(0, f"Auto-detect ({detected_name})")
-        except Exception as e:
+        if not disable_delim_detect:
+            try:
+                detected_delimiter, detected_rows = detector.detect_csv_format(content)
+                detected_name = detector.get_delimiter_name(detected_delimiter)
+                self.delimiter_combo.setItemText(0, f"Auto-detect ({detected_name})")
+            except Exception as e:
+                try:
+                    self.delimiter_combo.setItemText(0, "Auto-detect")
+                except Exception:
+                    pass
+                if self.delimiter_combo.currentIndex() == 0:
+                    self.status_label.setText(f"⚠ Detection failed: {str(e)}")
+                    return
+        else:
             try:
                 self.delimiter_combo.setItemText(0, "Auto-detect")
             except Exception:
                 pass
-            if self.delimiter_combo.currentIndex() == 0:
-                self.status_label.setText(f"⚠ Detection failed: {str(e)}")
-                return
 
         # Determine delimiter & rows used for preview/status and import settings.
         if self.delimiter_combo.currentIndex() == 0:
@@ -761,7 +787,7 @@ class CSVImportPlusDialog(QDialog):
 
         # Auto-pick note type if not forced
         detected_model = None
-        if not forced_model_info:
+        if not forced_model_info and not disable_nt_detect:
             (best_name, best_fields, best_idx) = detector.auto_pick_note_type(
                 content, delimiter, self.model_infos, self.header_check
             )
@@ -782,6 +808,7 @@ class CSVImportPlusDialog(QDialog):
             parts.append(f"Note type: {model_name} ({field_count} field(s))")
 
         self.status_label.setText(" • ".join(parts))
+        self.update_field_mapping_ui()
 
     def open_with_default_importer(self):
         raw = self.get_active_raw()
@@ -837,6 +864,13 @@ class CSVImportPlusDialog(QDialog):
         
         self.save_config()
 
+        # Collect mapping
+        field_mapping = {}
+        if hasattr(self, "mapping_dropdowns"):
+            for name, combo in self.mapping_dropdowns.items():
+                val = combo.itemData(combo.currentIndex())
+                field_mapping[name] = val
+
         # Disable main UI buttons during import
         self.import_tab_widget.quick_btn.setEnabled(False)
         self.import_tab_widget.remove_btn.setEnabled(False)
@@ -883,6 +917,7 @@ class CSVImportPlusDialog(QDialog):
                     match_scope_index=match_scope_index,
                     tag_all=tag_all,
                     tag_updated=tag_updated,
+                    field_mapping=field_mapping,
                 )
                 if res:
                     total_added += res["added"]
@@ -914,6 +949,132 @@ class CSVImportPlusDialog(QDialog):
             self.history_tab_widget.refresh_history()
         except Exception:
             pass
+
+    def update_field_mapping_ui(self):
+        # 1. Clear current field mapping layout
+        while self.field_mapping_layout.count() > 0:
+            item = self.field_mapping_layout.takeAt(0)
+            widget = item.widget()
+            if widget is not None:
+                widget.deleteLater()
+
+        # 2. Get current note type
+        model_idx = self.notetype_combo.currentIndex()
+        if model_idx < 0 or model_idx >= len(self.model_infos):
+            return
+
+        model_info = self.model_infos[model_idx]
+        try:
+            notetype = mw.col.models.get(model_info.id)
+            if not notetype:
+                return
+        except Exception:
+            return
+
+        field_names = [f["name"] for f in notetype["flds"]]
+        
+        # 3. Get previews for columns in current raw content/file
+        col_previews = self.get_column_previews()
+        
+        # Re-get saved mapping for this note type
+        config = mw.addonManager.getConfig(self._get_config_name()) or {}
+        saved_mappings = config.get("field_mappings", {}).get(model_info.name, {})
+
+        self.mapping_dropdowns = {}
+
+        # Add mapping row for each field
+        # plus a special row for "Tags"
+        all_mappable = field_names + ["Tags"]
+
+        for idx, name in enumerate(all_mappable):
+            combo = QComboBox()
+            combo.addItem("(Nothing)", None)
+            
+            # Add columns
+            for c_idx, preview in enumerate(col_previews):
+                combo.addItem(preview, c_idx)
+                
+            # Determine default selection
+            saved_col = saved_mappings.get(name)
+            combo.blockSignals(True)
+            if saved_col is not None:
+                if saved_col == "Nothing" or saved_col is None:
+                    combo.setCurrentIndex(0)
+                else:
+                    found = False
+                    for i in range(combo.count()):
+                        if combo.itemData(i) == saved_col:
+                            combo.setCurrentIndex(i)
+                            found = True
+                            break
+                    if not found:
+                        combo.setCurrentIndex(0)
+            else:
+                # Sane defaults
+                if name == "Tags":
+                    combo.setCurrentIndex(0)
+                else:
+                    if idx < len(col_previews):
+                        combo.setCurrentIndex(idx + 1)
+                    else:
+                        combo.setCurrentIndex(0)
+            combo.blockSignals(False)
+            
+            combo.currentIndexChanged.connect(lambda _, n=name, c=combo: self.save_field_mapping(n, c))
+            self.mapping_dropdowns[name] = combo
+            
+            label_text = name + ":"
+            self.field_mapping_layout.addRow(label_text, combo)
+
+    def get_column_previews(self) -> list[str]:
+        raw = self.get_active_raw()
+        if not raw:
+            if self.file_paths:
+                raw = self.bulk_file_details[0]["content"] if self.bulk_file_details else ""
+        if not raw:
+            return []
+        
+        content = detector.strip_directive_lines(raw)
+        delimiter = ","
+        try:
+            if self.delimiter_combo.currentIndex() == 0:
+                delimiter, _ = detector.detect_csv_format(content)
+            else:
+                delimiter = importer.get_delimiter(self.delimiter_combo, content)
+        except Exception:
+            delimiter = ","
+            
+        try:
+            reader = csv.reader(io.StringIO(content), delimiter=delimiter)
+            rows = [r for r in reader if r]
+            if not rows:
+                return []
+            first_row = rows[0]
+            previews = []
+            for idx, val in enumerate(first_row):
+                val_trimmed = val.strip()
+                if len(val_trimmed) > 15:
+                    val_trimmed = val_trimmed[:12] + "..."
+                previews.append(f"{idx + 1}: {val_trimmed}")
+            return previews
+        except Exception:
+            return []
+
+    def save_field_mapping(self, name, combo):
+        model_idx = self.notetype_combo.currentIndex()
+        if model_idx < 0 or model_idx >= len(self.model_infos):
+            return
+        model_name = self.model_infos[model_idx].name
+        
+        config = mw.addonManager.getConfig(self._get_config_name()) or {}
+        if "field_mappings" not in config:
+            config["field_mappings"] = {}
+        if model_name not in config["field_mappings"]:
+            config["field_mappings"][model_name] = {}
+            
+        val = combo.itemData(combo.currentIndex())
+        config["field_mappings"][model_name][name] = val
+        mw.addonManager.writeConfig(self._get_config_name(), config)
 
 
 class DummyWidget:
