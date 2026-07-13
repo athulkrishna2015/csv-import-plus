@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+### [3.3.1] - 2026-07-13
+
+- **Fixed**: Clipboard quick import now uses sequential column mapping, preventing empty card imports when the GUI editor is empty.
+- **Fixed**: Clipboard quick import now dynamically auto-detects Note Type (e.g. Cloze) and field delimiters directly from the clipboard content.
+
 ### [3.3.0] - 2026-07-12
 
 - **Added**: Full parity with default Anki importer's Column and Field mapping, allowing customized column assignment for target note fields and Tags.

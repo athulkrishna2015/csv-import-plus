@@ -562,12 +562,49 @@ class CSVImportPlusDialog(QDialog):
             self.update_quick_clipboard_button_state()
             return
 
+        # Auto-detect delimiter and note type for clipboard content (respecting override settings)
+        disable_delim_detect = self.disable_delimiter_auto_detect_check.isChecked()
+        disable_nt_detect = self.disable_notetype_auto_detect_check.isChecked()
+        raw_stripped = detector.strip_directive_lines(raw)
+
+        detected_delim = ","
+        if not disable_delim_detect:
+            try:
+                detected_delim, _ = detector.detect_csv_format(raw_stripped)
+                delim_map = {",": 1, "\t": 2, ";": 3, "|": 4}
+                delim_idx = delim_map.get(detected_delim)
+                if delim_idx is not None:
+                    self.delimiter_combo.blockSignals(True)
+                    self.delimiter_combo.setCurrentIndex(delim_idx)
+                    self.delimiter_combo.blockSignals(False)
+            except Exception:
+                pass
+
+        if not disable_nt_detect:
+            directives = detector.extract_directives(raw)
+            nt_name = directives.get("notetype")
+            best_idx = None
+            if nt_name:
+                best_idx = detector.find_model_index_by_name(self.model_infos, nt_name)
+            else:
+                delimiter = detected_delim
+                if disable_delim_detect:
+                    delimiter = importer.get_delimiter(self.delimiter_combo, raw_stripped)
+                (_, _, best_idx) = detector.auto_pick_note_type(
+                    raw_stripped, delimiter, self.model_infos, self.header_check
+                )
+            
+            if best_idx is not None:
+                self.notetype_combo.blockSignals(True)
+                self.notetype_combo.setCurrentIndex(best_idx)
+                self.notetype_combo.blockSignals(False)
+
         if self.confirm_clipboard_quick_import:
             summary = self._build_clipboard_import_summary(raw)
             if not self._confirm_clipboard_quick_import(summary, raw):
                 return
 
-        self._run_import(raw, clear_pasted_input=False)
+        self._run_import(raw, clear_pasted_input=False, use_mapping=False)
         self.update_quick_clipboard_button_state()
 
     def _build_clipboard_import_summary(self, raw: str) -> str:
@@ -662,10 +699,10 @@ class CSVImportPlusDialog(QDialog):
 
         return confirmed
 
-    def _run_import(self, raw: str, clear_pasted_input: bool):
+    def _run_import(self, raw: str, clear_pasted_input: bool, use_mapping: bool = True):
         self.save_config()
         field_mapping = {}
-        if hasattr(self, "mapping_dropdowns"):
+        if use_mapping and hasattr(self, "mapping_dropdowns"):
             for name, combo in self.mapping_dropdowns.items():
                 val = combo.itemData(combo.currentIndex())
                 field_mapping[name] = val

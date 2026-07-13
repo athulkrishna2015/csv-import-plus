@@ -349,5 +349,46 @@ class TestImporterFunctional(unittest.TestCase):
         # Cleanup dialog
         dialog.accept()
 
+    def test_quick_import_clipboard_sequential_mapping(self):
+        import aqt
+        from aqt.qt import QApplication
+        # Mock clipboard text
+        mock_clipboard = types.SimpleNamespace(
+            text=lambda: "ClipFront,ClipBack,ClipField3,ClipTag",
+            dataChanged=types.SimpleNamespace(connect=lambda *args: None)
+        )
+        old_clipboard = QApplication.clipboard
+        QApplication.clipboard = lambda *args: mock_clipboard
+        
+        try:
+            aqt.mw.addonManager = types.SimpleNamespace(
+                getConfig=lambda *args: {},
+                writeConfig=lambda *args: None,
+                addonFromModule=lambda *args: "csv_import_plus_dev",
+                addonMeta=lambda *args: {},
+            )
+            import addon.dialog as dialog_mod
+            dialog_mod.mw = aqt.mw
+            
+            from addon.dialog import CSVImportPlusDialog
+            dialog = CSVImportPlusDialog(None)
+            
+            # Assume mapping is empty or set to (Nothing) in the GUI
+            # (Since no file/text is loaded, mapping defaults to None/Nothing)
+            # Verify quick import clipboard uses sequential fallback instead of empty mapping
+            dialog.quick_import_clipboard()
+            
+            # Verify notes in database
+            notes = [self.col.get_note(nid) for nid in self.col.find_notes("")]
+            self.assertEqual(len(notes), 1)
+            self.assertEqual(notes[0].fields[0], "ClipFront")
+            self.assertEqual(notes[0].fields[1], "ClipBack")
+            self.assertEqual(notes[0].fields[2], "ClipField3")
+            self.assertEqual(notes[0].tags, ["ClipTag"])
+            
+            dialog.accept()
+        finally:
+            QApplication.clipboard = old_clipboard
+
 if __name__ == "__main__":
     unittest.main()
