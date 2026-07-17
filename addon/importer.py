@@ -186,7 +186,8 @@ def do_import(
         # Check if field_mapping is valid (at least one field mapped to a column index)
         is_mapping_valid = False
         if field_mapping:
-            for f_name, col_idx in field_mapping.items():
+            for f_name in field_names:
+                col_idx = field_mapping.get(f_name)
                 if col_idx is not None:
                     is_mapping_valid = True
                     break

@@ -24,6 +24,41 @@ from aqt.qt import (
     QProgressBar,
 )
 
+class ReorderableTableWidget(QTableWidget):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setDragEnabled(True)
+        self.setAcceptDrops(True)
+        self.setDefaultDropAction(Qt.DropAction.MoveAction)
+        self.setDragDropOverwriteMode(False)
+        self.setDragDropMode(QTableWidget.DragDropMode.InternalMove)
+        self.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
+        self.setSelectionMode(QTableWidget.SelectionMode.SingleSelection)
+        self.dialog = None
+
+    def dropEvent(self, event):
+        if event.source() == self:
+            selected_rows = self.selectedItems()
+            if not selected_rows:
+                return
+            src_row = selected_rows[0].row()
+            
+            pos = event.position().toPoint() if hasattr(event, "position") else event.pos()
+            target_item = self.itemAt(pos)
+            if target_item:
+                dest_row = target_item.row()
+            else:
+                dest_row = self.rowCount() - 1
+                
+            if self.dialog and hasattr(self.dialog, "move_bulk_file_to"):
+                self.dialog.move_bulk_file_to(src_row, dest_row)
+                event.accept()
+            else:
+                super().dropEvent(event)
+        else:
+            super().dropEvent(event)
+
+
 class ImportTab(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -115,16 +150,18 @@ class ImportTab(QWidget):
         self.csv_text.textChanged.connect(self.on_csv_text_changed)
         self.content_stack.addWidget(self.csv_text)
         
-        self.bulk_table = QTableWidget()
-        self.bulk_table.setColumnCount(5)
+        self.bulk_table = ReorderableTableWidget()
+        self.bulk_table.dialog = self.dialog
+        self.bulk_table.setColumnCount(6)
         self.bulk_table.setHorizontalHeaderLabels([
-            "File Name", "Delimiter", "Note Type (Auto-picked)", "Rows", "Status"
+            "File Name", "Delimiter", "Note Type", "Rows", "Status", "Actions"
         ])
         self.bulk_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
         self.bulk_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.ResizeToContents)
         self.bulk_table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.ResizeToContents)
         self.bulk_table.horizontalHeader().setSectionResizeMode(3, QHeaderView.ResizeMode.ResizeToContents)
         self.bulk_table.horizontalHeader().setSectionResizeMode(4, QHeaderView.ResizeMode.Stretch)
+        self.bulk_table.horizontalHeader().setSectionResizeMode(5, QHeaderView.ResizeMode.ResizeToContents)
         self.bulk_table.setAlternatingRowColors(True)
         self.bulk_table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
         self.content_stack.addWidget(self.bulk_table)

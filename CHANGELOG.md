@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+### [3.4.0] - 2026-07-17
+
+- **Added**: Drag-and-drop row reordering in the bulk files import list.
+- **Added**: Inline comboboxes to change delimiter and Note Type per file directly inside the bulk import table.
+- **Added**: Inline row removal button for each file in the bulk import queue.
+- **Fixed**: Resolved empty notes during bulk import by dynamically matching field mappings for each file's specific note type and validating mapped note type fields.
+
 ### [3.3.1] - 2026-07-13
 
 - **Fixed**: Clipboard quick import now uses sequential column mapping, preventing empty card imports when the GUI editor is empty.

@@ -436,5 +436,51 @@ class TestImporterFunctional(unittest.TestCase):
         finally:
             QApplication.clipboard = old_clipboard
 
+    def test_bulk_import_mismatched_notetype_mapping_fallback(self):
+        # Create temp files
+        file1 = os.path.join(self.temp_dir, "mismatched1.csv")
+        with open(file1, "w", encoding="utf-8") as f:
+            f.write("Front,Back\nValF1,ValB1")
+
+        # Mock mw configuration
+        import aqt
+        aqt.mw.addonManager = types.SimpleNamespace(
+            getConfig=lambda *args: {},
+            writeConfig=lambda *args: None,
+            addonFromModule=lambda *args: "csv_import_plus_dev",
+            addonMeta=lambda *args: {},
+        )
+        import addon.dialog as dialog_mod
+        dialog_mod.mw = aqt.mw
+
+        from addon.dialog import CSVImportPlusDialog
+        dialog = CSVImportPlusDialog(None)
+        
+        # Explicitly configure a mapping in mapping_dropdowns for a different note type/fields
+        from aqt.qt import QComboBox
+        combo1 = QComboBox()
+        combo1.addItem("Col 1", 0)
+        dialog.mapping_dropdowns = {
+            "MismatchedField": combo1
+        }
+        
+        # Load files and run import
+        dialog.load_files([file1])
+        dialog.do_import()
+
+        # Since "MismatchedField" does not match "Front" or "Back", the mapping is invalid for Basic note type.
+        # It should fall back to sequential mapping and import Front and Back correctly.
+        notes = [self.col.get_note(nid) for nid in self.col.find_notes("")]
+        self.assertTrue(len(notes) >= 1)
+        target_note = None
+        for n in notes:
+            if n.fields[0] == "ValF1":
+                target_note = n
+                break
+        self.assertIsNotNone(target_note)
+        self.assertEqual(target_note.fields[1], "ValB1")
+        
+        dialog.accept()
+
 if __name__ == "__main__":
     unittest.main()

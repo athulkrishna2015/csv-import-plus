@@ -362,10 +362,7 @@ class CSVImportPlusDialog(QDialog):
                 except Exception:
                     pass
             
-            delim_name = detector.get_delimiter_name(delimiter)
-            
             # Auto-pick model/note type
-            model_name = "None"
             model_idx = None
             
             # Check for directive
@@ -375,14 +372,12 @@ class CSVImportPlusDialog(QDialog):
                 idx = detector.find_model_index_by_name(self.model_infos, directive_nt_name)
                 if idx is not None:
                     model_idx = idx
-                    model_name = f"{self.model_infos[idx].name} (via directive)"
             
             if model_idx is None and content:
                 best_name, best_fields, best_idx = detector.auto_pick_note_type(
                     content, delimiter, self.model_infos, self.header_check
                 )
                 if best_idx is not None:
-                    model_name = best_name
                     model_idx = best_idx
             
             self.bulk_file_details.append({
@@ -390,31 +385,153 @@ class CSVImportPlusDialog(QDialog):
                 "content": content,
                 "delimiter": delimiter,
                 "model_idx": model_idx,
-                "rows_count": rows_count
+                "rows_count": rows_count,
+                "selected_delim_idx": 0
             })
             
-            # Create Table Items
-            item_name = QTableWidgetItem(filename)
-            item_name.setToolTip(path)
-            item_name.setFlags(item_name.flags() & ~Qt.ItemFlag.ItemIsEditable)
+            self.setup_bulk_table_row(row_idx, filename, path, content, delimiter, model_idx, rows_count)
+
+    def refresh_bulk_table_from_details(self):
+        self.import_tab_widget.bulk_table.setRowCount(0)
+        self.import_tab_widget.bulk_table.setRowCount(len(self.bulk_file_details))
+        
+        for row_idx, details in enumerate(self.bulk_file_details):
+            path = details["path"]
+            filename = os.path.basename(path)
+            content = details["content"]
+            delimiter = details["delimiter"]
+            model_idx = details["model_idx"]
+            rows_count = details["rows_count"]
             
-            item_delim = QTableWidgetItem(delim_name)
-            item_delim.setFlags(item_delim.flags() & ~Qt.ItemFlag.ItemIsEditable)
+            self.setup_bulk_table_row(row_idx, filename, path, content, delimiter, model_idx, rows_count)
+
+    def setup_bulk_table_row(self, row_idx, filename, path, content, delimiter, model_idx, rows_count):
+        table = self.import_tab_widget.bulk_table
+        
+        # 1. File Name
+        item_name = QTableWidgetItem(filename)
+        item_name.setToolTip(path)
+        item_name.setFlags(item_name.flags() & ~Qt.ItemFlag.ItemIsEditable)
+        table.setItem(row_idx, 0, item_name)
+        
+        # 2. Delimiter Combo
+        delim_combo = QComboBox()
+        delim_combo.addItems([
+            "Auto-detect",
+            "Comma (,)",
+            "Tab",
+            "Semicolon (;)",
+            "Pipe (|)"
+        ])
+        selected_delim_idx = self.bulk_file_details[row_idx].get("selected_delim_idx", 0)
+        delim_combo.setCurrentIndex(selected_delim_idx)
+        delim_combo.currentIndexChanged.connect(lambda idx, r=row_idx: self.on_row_delimiter_changed(r, idx))
+        table.setCellWidget(row_idx, 1, delim_combo)
+        
+        # 3. Note Type Combo
+        model_combo = QComboBox()
+        model_combo.addItem("None", None)
+        for m in self.model_infos:
+            model_combo.addItem(m.name, m.id)
             
-            item_model = QTableWidgetItem(model_name)
-            item_model.setFlags(item_model.flags() & ~Qt.ItemFlag.ItemIsEditable)
+        if model_idx is not None:
+            # Add 1 because index 0 is "None"
+            model_combo.setCurrentIndex(model_idx + 1)
+        else:
+            model_combo.setCurrentIndex(0)
             
-            item_rows = QTableWidgetItem(str(rows_count))
-            item_rows.setFlags(item_rows.flags() & ~Qt.ItemFlag.ItemIsEditable)
+        model_combo.currentIndexChanged.connect(lambda idx, r=row_idx: self.on_row_model_changed(r, idx))
+        table.setCellWidget(row_idx, 2, model_combo)
+        
+        # 4. Rows Count
+        item_rows = QTableWidgetItem(str(rows_count))
+        item_rows.setFlags(item_rows.flags() & ~Qt.ItemFlag.ItemIsEditable)
+        table.setItem(row_idx, 3, item_rows)
+        
+        # 5. Status
+        item_status = QTableWidgetItem("Ready")
+        item_status.setFlags(item_status.flags() & ~Qt.ItemFlag.ItemIsEditable)
+        table.setItem(row_idx, 4, item_status)
+        
+        # 6. Actions Widget (Remove button)
+        actions_widget = QWidget()
+        actions_layout = QHBoxLayout(actions_widget)
+        actions_layout.setContentsMargins(2, 2, 2, 2)
+        actions_layout.setSpacing(4)
+        
+        remove_btn = QPushButton("✖")
+        remove_btn.setToolTip("Remove file")
+        remove_btn.setFixedSize(24, 24)
+        remove_btn.setStyleSheet("color: red; font-weight: bold;")
+        remove_btn.clicked.connect(lambda _, r=row_idx: self.remove_bulk_file(r))
+        
+        actions_layout.addWidget(remove_btn)
+        actions_layout.addStretch()
+        
+        table.setCellWidget(row_idx, 5, actions_widget)
+
+    def on_row_delimiter_changed(self, row_idx, combo_idx):
+        if 0 <= row_idx < len(self.bulk_file_details):
+            details = self.bulk_file_details[row_idx]
+            details["selected_delim_idx"] = combo_idx
             
-            item_status = QTableWidgetItem("Ready")
-            item_status.setFlags(item_status.flags() & ~Qt.ItemFlag.ItemIsEditable)
+            # Recalculate delimiter and rows_count
+            content = details["content"]
+            delimiter = ","
+            if combo_idx == 0: # Auto-detect
+                try:
+                    delimiter, _ = detector.detect_csv_format(content)
+                except Exception:
+                    pass
+            else:
+                delim_map = {1: ",", 2: "\t", 3: ";", 4: "|"}
+                delimiter = delim_map.get(combo_idx, ",")
+                
+            details["delimiter"] = delimiter
             
-            self.import_tab_widget.bulk_table.setItem(row_idx, 0, item_name)
-            self.import_tab_widget.bulk_table.setItem(row_idx, 1, item_delim)
-            self.import_tab_widget.bulk_table.setItem(row_idx, 2, item_model)
-            self.import_tab_widget.bulk_table.setItem(row_idx, 3, item_rows)
-            self.import_tab_widget.bulk_table.setItem(row_idx, 4, item_status)
+            # Re-read row count using selected delimiter
+            rows_count = 0
+            if content:
+                try:
+                    reader = csv.reader(io.StringIO(content), delimiter=delimiter)
+                    rows_count = sum(1 for _ in reader)
+                except Exception:
+                    pass
+            details["rows_count"] = rows_count
+            
+            # Update rows count item in table
+            item_rows = self.import_tab_widget.bulk_table.item(row_idx, 3)
+            if item_rows:
+                item_rows.setText(str(rows_count))
+
+    def on_row_model_changed(self, row_idx, combo_idx):
+        if 0 <= row_idx < len(self.bulk_file_details):
+            details = self.bulk_file_details[row_idx]
+            if combo_idx == 0:
+                details["model_idx"] = None
+            else:
+                details["model_idx"] = combo_idx - 1
+
+    def move_bulk_file_to(self, src_row, dest_row):
+        if src_row == dest_row:
+            return
+        if 0 <= src_row < len(self.file_paths) and 0 <= dest_row < len(self.file_paths):
+            path = self.file_paths.pop(src_row)
+            self.file_paths.insert(dest_row, path)
+            
+            details = self.bulk_file_details.pop(src_row)
+            self.bulk_file_details.insert(dest_row, details)
+            
+            self.refresh_bulk_table_from_details()
+
+    def remove_bulk_file(self, row_idx):
+        if 0 <= row_idx < len(self.file_paths):
+            self.file_paths.pop(row_idx)
+            self.bulk_file_details.pop(row_idx)
+            if not self.file_paths:
+                self.load_text_content("")
+            else:
+                self.refresh_bulk_table_from_details()
 
     def load_text_content(self, text: str):
         # Clear selected file
@@ -853,19 +970,11 @@ class CSVImportPlusDialog(QDialog):
         importer.open_with_default_importer(raw, self.deck_combo, self.deck_infos)
 
     def do_import(self):
-        from aqt.utils import askUser
         if self.file_paths:
-            if not askUser(f"Are you sure you want to import {len(self.file_paths)} files in bulk?"):
-                return
             self.run_bulk_import()
         else:
             raw = self.get_active_raw()
             if not raw:
-                return
-            if not askUser(
-                f"Are you sure you want to import this CSV content to deck '{self.deck_combo.currentText()}' "
-                f"using note type '{self.notetype_combo.currentText()}'?"
-            ):
                 return
             self._run_import(raw, clear_pasted_input=True)
 
@@ -882,12 +991,14 @@ class CSVImportPlusDialog(QDialog):
         for i in sorted(indices_to_remove, reverse=True):
             if 0 <= i < len(self.file_paths):
                 self.file_paths.pop(i)
+                if i < len(self.bulk_file_details):
+                    self.bulk_file_details.pop(i)
                 
         if not self.file_paths:
             # Revert to single file/editor mode
             self.load_text_content("")
         else:
-            self.load_files(self.file_paths)
+            self.refresh_bulk_table_from_details()
 
     def add_file_paths(self, paths):
         for p in paths:
@@ -948,9 +1059,29 @@ class CSVImportPlusDialog(QDialog):
             
             dummy_deck_combo = DummyWidget(_index=deck_idx, _text=self.deck_combo.currentText())
             dummy_notetype_combo = DummyWidget(_index=model_idx)
-            dummy_delimiter_combo = DummyWidget(_index=0, _text="Auto-detect")
+            dummy_delimiter_combo = DummyWidget(_index=details.get("selected_delim_idx", 0), _text="Auto-detect")
             dummy_header_check = DummyWidget(_checked=header_checked)
             
+            # Determine mapping for this specific file
+            file_field_mapping = {}
+            if model_idx == self.notetype_combo.currentIndex():
+                # Use current UI mapping
+                for name, val in field_mapping.items():
+                    if val == "Nothing" or val is None:
+                        file_field_mapping[name] = None
+                    else:
+                        file_field_mapping[name] = val
+            else:
+                # Load saved mapping for this note type
+                model_info = self.model_infos[model_idx]
+                config = mw.addonManager.getConfig(self._get_config_name()) or {}
+                saved_mappings = config.get("field_mappings", {}).get(model_info.name, {})
+                for name, val in saved_mappings.items():
+                    if val == "Nothing" or val is None:
+                        file_field_mapping[name] = None
+                    else:
+                        file_field_mapping[name] = val
+
             try:
                 res = importer.do_import(
                     content,
@@ -965,7 +1096,7 @@ class CSVImportPlusDialog(QDialog):
                     match_scope_index=match_scope_index,
                     tag_all=tag_all,
                     tag_updated=tag_updated,
-                    field_mapping=field_mapping,
+                    field_mapping=file_field_mapping,
                 )
                 if res:
                     total_added += res["added"]

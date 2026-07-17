@@ -19,7 +19,11 @@ def install_anki_stubs() -> None:
     def showWarning(_msg):
         return None
 
+    def showInfo(_msg, parent=None):
+        return None
+
     utils.showWarning = showWarning
+    utils.showInfo = showInfo
     sys.modules["aqt.utils"] = utils
 
     importing = types.ModuleType("aqt.importing")
