@@ -139,6 +139,7 @@ class ImportTab(QWidget):
         # Status
         self.status_label = QLabel("")
         self.status_label.setStyleSheet("color: #21808D; font-weight: 500;")
+        self.status_label.setWordWrap(True)
         layout.addWidget(self.status_label)
 
         # Settings

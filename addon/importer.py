@@ -183,6 +183,16 @@ def do_import(
 
         field_names = [f["name"] for f in notetype["flds"]]
 
+        # Check if field_mapping is valid (at least one field mapped to a column index)
+        is_mapping_valid = False
+        if field_mapping:
+            for f_name, col_idx in field_mapping.items():
+                if col_idx is not None:
+                    is_mapping_valid = True
+                    break
+        if not is_mapping_valid:
+            field_mapping = None
+
         mw.col.decks.select(deck_id)
 
         # Retrieve existing notes for duplicate checking if mode is Update or Preserve

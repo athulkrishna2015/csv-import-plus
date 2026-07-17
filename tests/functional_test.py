@@ -75,12 +75,18 @@ class TestImporterFunctional(unittest.TestCase):
         support_tab_mod.mw = aqt.mw
         main_mod.mw = aqt.mw
 
+        import aqt.utils
+        self._old_askUser = aqt.utils.askUser
+        aqt.utils.askUser = lambda *args, **kwargs: True
+
         # Get default deck and model
         self.deck_id = self.col.decks.id("Default")
         self.model = self.col.models.by_name("Basic")
         self.model_id = self.model["id"]
 
     def tearDown(self):
+        import aqt.utils
+        aqt.utils.askUser = self._old_askUser
         self.col.close()
         shutil.rmtree(self.temp_dir)
 
@@ -252,6 +258,45 @@ class TestImporterFunctional(unittest.TestCase):
         self.assertTrue("tagAll" in notes[0].tags)
         self.assertTrue("tagUpdate" in notes[0].tags)
 
+    def test_single_file_browse_import_not_empty(self):
+        # Create a temp CSV file
+        file_path = os.path.join(self.temp_dir, "single.csv")
+        with open(file_path, "w", encoding="utf-8") as f:
+            f.write("Front,Back\nMyFrontVal,MyBackVal")
+            
+        import aqt
+        aqt.mw.addonManager = types.SimpleNamespace(
+            getConfig=lambda *args: {},
+            writeConfig=lambda *args: None,
+            addonFromModule=lambda *args: "csv_import_plus_dev",
+            addonMeta=lambda *args: {},
+        )
+        import addon.dialog as dialog_mod
+        dialog_mod.mw = aqt.mw
+        
+        from addon.dialog import CSVImportPlusDialog
+        dialog = CSVImportPlusDialog(None)
+        dialog.header_check.setChecked(True)
+        
+        # Load the file
+        dialog.load_files([file_path])
+        
+        # Verify it's in single-file mode
+        self.assertEqual(dialog.file_path, file_path)
+        self.assertEqual(len(dialog.file_paths), 0)
+        
+        # Run import
+        dialog.do_import()
+        
+        # Verify notes in database
+        notes = [self.col.get_note(nid) for nid in self.col.find_notes("")]
+        self.assertEqual(len(notes), 1)
+        print("SINGLE FILE BROWSE FIELDS:", notes[0].fields)
+        self.assertEqual(notes[0].fields[0], "MyFrontVal")
+        self.assertEqual(notes[0].fields[1], "MyBackVal")
+        
+        dialog.accept()
+
     def test_disable_auto_detection(self):
         import aqt
         aqt.mw.addonManager = types.SimpleNamespace(
@@ -334,9 +379,10 @@ class TestImporterFunctional(unittest.TestCase):
         # Run bulk import
         dialog.do_import()
 
-        # Verify notes in database
         notes = [self.col.get_note(nid) for nid in self.col.find_notes("")]
         self.assertEqual(len(notes), 4)
+        self.assertEqual(notes[0].fields[0], "Front1")
+        self.assertEqual(notes[0].fields[1], "Back1")
         
         # Test add/remove paths
         dialog.add_file_paths([file1])  # Duplicate, should not add

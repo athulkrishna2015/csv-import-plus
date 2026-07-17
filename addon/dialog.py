@@ -326,6 +326,7 @@ class CSVImportPlusDialog(QDialog):
             
             # Populate bulk table
             self.populate_bulk_table()
+            self.on_content_changed()
 
     def populate_bulk_table(self):
         self.import_tab_widget.bulk_table.setRowCount(0)
@@ -736,7 +737,7 @@ class CSVImportPlusDialog(QDialog):
                 parts.append(f"Skipped empty rows: {result['skipped_empty']}")
             if result["used_auto_delimiter"]:
                 parts.append(f"Used delimiter: {result['delimiter_name']}")
-            self.status_label.setText(" • ".join(parts))
+            self.status_label.setText("\n".join(parts))
 
         if self.deck_lock_check.isChecked() and self.locked_deck_name:
             self.deck_combo.setCurrentText(self.locked_deck_name)
@@ -852,10 +853,20 @@ class CSVImportPlusDialog(QDialog):
         importer.open_with_default_importer(raw, self.deck_combo, self.deck_infos)
 
     def do_import(self):
+        from aqt.utils import askUser
         if self.file_paths:
+            if not askUser(f"Are you sure you want to import {len(self.file_paths)} files in bulk?"):
+                return
             self.run_bulk_import()
         else:
             raw = self.get_active_raw()
+            if not raw:
+                return
+            if not askUser(
+                f"Are you sure you want to import this CSV content to deck '{self.deck_combo.currentText()}' "
+                f"using note type '{self.notetype_combo.currentText()}'?"
+            ):
+                return
             self._run_import(raw, clear_pasted_input=True)
 
     def remove_selected_files(self):
